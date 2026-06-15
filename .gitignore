@@ -1,0 +1,54 @@
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc.)
+local.properties
+
+# Log files
+*.log
+
+# Keystore files / signing files (NEVER commit secrets!)
+*.jks
+*.keystore
+*.pepk
+*.pk8
+*.pem
+*.p12
+*.pfx
+*signing*
+
+# Android Studio / IntelliJ IDEA files
+.idea/
+*.iml
+*.ipr
+*.iws
+.navigation/
+.cxx/
+.externalNativeBuild/
+captures/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+secrets.properties
+private.properties
+
+# Built outputs
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Crashlytics/Firebase-specific files
+crashlytics-build.properties
+
+# Cache files
+.kotlin/

@@ -1,0 +1,55 @@
+<resources>
+    <string name="app_name" translatable="false">Licha</string>
+    <string name="said">a dit</string>
+    
+    <!-- Login Screen -->
+    <string name="welcome_to">Bienvenue sur Licha</string>
+    <string name="chat_tts">Lecteur de Chat Twitch (TTS)</string>
+    <string name="option_a">Option A: Connexion Automatique</string>
+    <string name="client_id_label">ID Client Twitch</string>
+    <string name="authorize">Autoriser avec Twitch</string>
+    <string name="authorize_desc">Ouvre la page d\'autorisation de Twitch. Redirige ici automatiquement.</string>
+    <string name="or">OU</string>
+    <string name="option_b">Option B: Connexion Manuelle</string>
+    <string name="oauth_label">Jeton OAuth Twitch</string>
+    <string name="get_token">Obtenir un Jeton</string>
+    <string name="connect_manually">Connexion Manuelle</string>
+    <string name="advanced_settings">Paramètres Avancés</string>
+    <string name="hide_id">Masquer l\'ID</string>
+    <string name="use_custom_id">Utiliser un ID Personnalisé</string>
+
+    <!-- Settings Screen -->
+    <string name="settings">Paramètres</string>
+    <string name="target_channel">Chaîne Twitch Cible</string>
+    <string name="listen_to_channel">Écouter le chat de cette chaîne :</string>
+    <string name="channel_name_placeholder">Nom de la chaîne</string>
+    <string name="switch_btn">Changer</string>
+    <string name="ignore_by_role">Ignorer les messages par Rôle</string>
+    <string name="normal_users">Utilisateurs Normaux</string>
+    <string name="ignore_normal_desc">Ignorer les messages des non-abonnés / non-modérateurs</string>
+    <string name="subscribers">Abonnés</string>
+    <string name="ignore_subs_desc">Ignorer les messages des abonnés de la chaîne</string>
+    <string name="moderators">Modérateurs</string>
+    <string name="ignore_mods_desc">Ignorer les messages des modérateurs de la chaîne</string>
+    <string name="tts_config">Configuration de Synthèse Vocale (TTS)</string>
+    <string name="speech_voice">Voix de Synthèse</string>
+    <string name="default_voice">Voix par Défaut du Moteur</string>
+    <string name="speech_pitch">Hauteur de Voix</string>
+    <string name="speech_rate">Vitesse de Parole</string>
+    <string name="tts_volume">Volumen de Voix</string>
+    <string name="ignored_users">Utilisateurs Ignorés</string>
+    <string name="ignored_username_label">Nom d\'utilisateur Twitch</string>
+    <string name="no_ignored_users">Aucun utilisateur ignoré actuellement.</string>
+    <string name="log_out">Se Déconnecter</string>
+
+    <!-- Chat Screen -->
+    <string name="filter_logs">Filtrer les journaux de chat...</string>
+    <string name="quick_tts_settings">Réglages Vocaux Rapides</string>
+    <string name="no_matching_results">Aucun résultat correspondant.</string>
+    <string name="chat_logs_appear">Les messages du chat s\'afficheront ici.</string>
+    <string name="connected_status">Connecté au chat</string>
+    <string name="connecting_status">Connexion en cours...</string>
+    <string name="offline_status">Déconnecté</string>
+    <string name="error_status">Erreur de connexion</string>
+    <string name="security_warning">Avertissement de sécurité : Le stockage sécurisé n\'est pas disponible sur cet appareil. Votre jeton OAuth sera enregistré en texte brut.</string>
+</resources>

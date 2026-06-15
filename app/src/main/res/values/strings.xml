@@ -1,15 +1,55 @@
 <resources>
-    <string name="app_name" translatable="false">TwitchChatTTS</string>
+    <string name="app_name" translatable="false">Licha</string>
     <string name="said">said</string>
-    <string name="OauthObtainerURL" translatable="false">https://twitchapps.com/tmi/</string>
-    <string name="TwitchOauthValidateURL" translatable="false">https://id.twitch.tv/oauth2/validate</string>
-    <string name="log_in">Log In</string>
+    
+    <!-- Login Screen -->
+    <string name="welcome_to">Welcome to Licha</string>
+    <string name="chat_tts">Twitch Chat Text-To-Speech</string>
+    <string name="option_a">Option A: Automatic Login</string>
+    <string name="client_id_label">Twitch Client ID</string>
+    <string name="authorize">Authorize with Twitch</string>
+    <string name="authorize_desc">Opens Twitch authorization page. Redirects back here automatically.</string>
+    <string name="or">OR</string>
+    <string name="option_b">Option B: Manual Connection</string>
+    <string name="oauth_label">Twitch OAuth Token</string>
     <string name="get_token">Get Token</string>
-    <string name="oauth">Oauth token</string>
-    <string name="welcome_to">Welcome to</string>
-    <string name="role_filter">Ignore by role</string>
-    <string name="log_out">Log Out</string>
-    <string name="moderator">Moderator</string>
-    <string name="normal_user">Normal user</string>
-    <string name="suscriber">Suscriber</string>
+    <string name="connect_manually">Connect Manually</string>
+    <string name="advanced_settings">Advanced Settings</string>
+    <string name="hide_id">Hide ID</string>
+    <string name="use_custom_id">Use Custom ID</string>
+
+    <!-- Settings Screen -->
+    <string name="settings">Settings</string>
+    <string name="target_channel">Target Twitch Channel</string>
+    <string name="listen_to_channel">Listen to chat from this channel:</string>
+    <string name="channel_name_placeholder">Channel name</string>
+    <string name="switch_btn">Switch</string>
+    <string name="ignore_by_role">Ignore messages by Role</string>
+    <string name="normal_users">Normal Users</string>
+    <string name="ignore_normal_desc">Ignore messages from non-sub/non-mod users</string>
+    <string name="subscribers">Subscribers</string>
+    <string name="ignore_subs_desc">Ignore messages from channel subscribers</string>
+    <string name="moderators">Moderators</string>
+    <string name="ignore_mods_desc">Ignore messages from channel moderators</string>
+    <string name="tts_config">Text-To-Speech Configuration</string>
+    <string name="speech_voice">Speech Voice</string>
+    <string name="default_voice">Default Engine Voice</string>
+    <string name="speech_pitch">Speech Pitch</string>
+    <string name="speech_rate">Speech Rate (Speed)</string>
+    <string name="tts_volume">TTS Volume</string>
+    <string name="ignored_users">Ignored Users</string>
+    <string name="ignored_username_label">Twitch Username</string>
+    <string name="no_ignored_users">No users currently ignored.</string>
+    <string name="log_out">Log Out &amp; Disconnect</string>
+
+    <!-- Chat Screen -->
+    <string name="filter_logs">Filter chat logs...</string>
+    <string name="quick_tts_settings">Quick TTS Settings</string>
+    <string name="no_matching_results">No matching results.</string>
+    <string name="chat_logs_appear">Chat logs will appear here.</string>
+    <string name="connected_status">Connected to chat</string>
+    <string name="connecting_status">Connecting...</string>
+    <string name="offline_status">Offline</string>
+    <string name="error_status">Connection error</string>
+    <string name="security_warning">Security Warning: Secure storage is unavailable on this device. Your OAuth token will be saved in plaintext format.</string>
 </resources>

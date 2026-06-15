@@ -1,13 +1,55 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="said">dijo</string>
-    <string name="log_in">Logearse</string>
-    <string name="get_token">Obtener token</string>
-    <string name="oauth">Token Oauth</string>
-    <string name="welcome_to">Bienvenido a</string>
-    <string name="role_filter">Ignorar por rol</string>
-    <string name="log_out">Cerrar sesión</string>
-    <string name="moderator">Moderador</string>
-    <string name="normal_user">Usuario normal</string>
-    <string name="suscriber">Suscriptor</string>
+    <string name="app_name" translatable="false">Licha</string>
+    <string name="said">ha dicho</string>
+    
+    <!-- Login Screen -->
+    <string name="welcome_to">Bienvenido a Licha</string>
+    <string name="chat_tts">Lector de Chat de Twitch (TTS)</string>
+    <string name="option_a">Opción A: Inicio Automático</string>
+    <string name="client_id_label">ID de Cliente de Twitch</string>
+    <string name="authorize">Autorizar con Twitch</string>
+    <string name="authorize_desc">Abre la página de autorización de Twitch. Redirige aquí automáticamente.</string>
+    <string name="or">O</string>
+    <string name="option_b">Opción B: Conexión Manual</string>
+    <string name="oauth_label">Token OAuth de Twitch</string>
+    <string name="get_token">Obtener Token</string>
+    <string name="connect_manually">Conectar Manualmente</string>
+    <string name="advanced_settings">Ajustes Avanzados</string>
+    <string name="hide_id">Ocultar ID</string>
+    <string name="use_custom_id">Usar ID Personalizado</string>
+
+    <!-- Settings Screen -->
+    <string name="settings">Ajustes</string>
+    <string name="target_channel">Canal de Twitch Objetivo</string>
+    <string name="listen_to_channel">Escuchar el chat de este canal:</string>
+    <string name="channel_name_placeholder">Nombre del canal</string>
+    <string name="switch_btn">Cambiar</string>
+    <string name="ignore_by_role">Ignorar mensajes por Rol</string>
+    <string name="normal_users">Usuarios Normales</string>
+    <string name="ignore_normal_desc">Ignorar mensajes de usuarios que no sean subs ni mods</string>
+    <string name="subscribers">Suscriptores</string>
+    <string name="ignore_subs_desc">Ignorar mensajes de suscriptores del canal</string>
+    <string name="moderators">Moderadores</string>
+    <string name="ignore_mods_desc">Ignorar mensajes de moderadores del canal</string>
+    <string name="tts_config">Configuración de Voz (TTS)</string>
+    <string name="speech_voice">Voz del Lector</string>
+    <string name="default_voice">Voz por Defecto del Motor</string>
+    <string name="speech_pitch">Tono de Voz</string>
+    <string name="speech_rate">Velocidad de Voz</string>
+    <string name="tts_volume">Volumen de Voz</string>
+    <string name="ignored_users">Usuarios Ignorados</string>
+    <string name="ignored_username_label">Nombre de Usuario de Twitch</string>
+    <string name="no_ignored_users">No hay usuarios ignorados actualmente.</string>
+    <string name="log_out">Cerrar Sesión y Desconectar</string>
+
+    <!-- Chat Screen -->
+    <string name="filter_logs">Filtrar registros de chat...</string>
+    <string name="quick_tts_settings">Ajustes Rápidos de Voz</string>
+    <string name="no_matching_results">No hay resultados coincidentes.</string>
+    <string name="chat_logs_appear">Los mensajes del chat aparecerán aquí.</string>
+    <string name="connected_status">Conectado al chat</string>
+    <string name="connecting_status">Conectando...</string>
+    <string name="offline_status">Desconectado</string>
+    <string name="error_status">Error de conexión</string>
+    <string name="security_warning">Advertencia de seguridad: El almacenamiento seguro no está disponible en este dispositivo. Su token OAuth se guardará en formato de texto plano.</string>
 </resources>
