@@ -52,3 +52,10 @@ crashlytics-build.properties
 
 # Cache files
 .kotlin/
+
+# Screenshots Automation
+screenshots_automation/raw/
+screenshots_automation/output/
+screenshots_automation/google_play_prep*.py
+screenshots_automation/screenshot_maker*.py
+screenshots_automation/split_config*.json
