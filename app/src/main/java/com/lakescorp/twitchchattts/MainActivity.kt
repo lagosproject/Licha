@@ -30,12 +30,32 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         handleIntent(intent)
 
+        val isScreenshotMode = intent?.getBooleanExtra("screenshot_mode", false) == true
+        val targetScreenStr = intent?.getStringExtra("target_screen") ?: "Login"
+        val screenshotLang = intent?.getStringExtra("lang") ?: "en-US"
+
+        if (isScreenshotMode) {
+            viewModel.injectMockData(screenshotLang)
+        }
+
         setContent {
             TwitchChatTTSTheme {
-                var currentScreen by remember { mutableStateOf(Screen.Login) }
+                val startScreen = remember {
+                    if (isScreenshotMode) {
+                        try {
+                            Screen.valueOf(targetScreenStr)
+                        } catch (e: Exception) {
+                            Screen.Login
+                        }
+                    } else {
+                        Screen.Login
+                    }
+                }
+                var currentScreen by remember { mutableStateOf(startScreen) }
                 val loginState by viewModel.loginState.collectAsState()
 
                 LaunchedEffect(loginState) {
+                    if (isScreenshotMode) return@LaunchedEffect
                     when (loginState) {
                         is AuthManager.LoginState.Success -> {
                             if (currentScreen == Screen.Login) currentScreen = Screen.Chat

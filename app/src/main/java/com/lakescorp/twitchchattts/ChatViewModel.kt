@@ -292,6 +292,38 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun injectMockData(lang: String) {
+        viewModelScope.launch {
+            _connectionState.value = ConnectionState.Connected
+            settingsRepository.setChannel("licha")
+            
+            val mockMessages = when (lang) {
+                "es-ES" -> listOf(
+                    TwitchIrcClient.TwitchChatMessage("system", "Sistema", "Síntesis de voz inicializada correctamente.", "Síntesis de voz inicializada correctamente.", false, false, false),
+                    TwitchIrcClient.TwitchChatMessage("nightbot", "Nightbot", "¡Recuerda suscribirte al canal para obtener beneficios!", "¡Recuerda suscribirte al canal para obtener beneficios!", true, false, false),
+                    TwitchIrcClient.TwitchChatMessage("gamer_x", "Gamer_X", "¡Hola! Me encanta el stream de hoy.", "¡Hola! Me encanta el stream de hoy.", false, true, false),
+                    TwitchIrcClient.TwitchChatMessage("speedy_07", "Speedy_07", "¿Puedes oír mi mensaje de voz a texto?", "¿Puedes oír mi mensaje de voz a texto?", false, false, false),
+                    TwitchIrcClient.TwitchChatMessage("techgeek", "TechGeek", "¡Licha hace que los streams de VR sean mucho más fáciles!", "¡Licha hace que los streams de VR sean mucho más fáciles!", true, true, false)
+                )
+                "fr-FR" -> listOf(
+                    TwitchIrcClient.TwitchChatMessage("system", "Système", "Synthèse vocale initialisée avec succès.", "Synthèse vocale initialisée avec succès.", false, false, false),
+                    TwitchIrcClient.TwitchChatMessage("nightbot", "Nightbot", "Pensez à vous abonner pour soutenir la chaîne !", "Pensez à vous abonner pour soutenir la chaîne !", true, false, false),
+                    TwitchIrcClient.TwitchChatMessage("gamer_x", "Gamer_X", "Salut ! Super stream aujourd'hui.", "Salut ! Super stream aujourd'hui.", false, true, false),
+                    TwitchIrcClient.TwitchChatMessage("speedy_07", "Speedy_07", "Est-ce que tu entends mon message vocal ?", "Est-ce que tu entends mon message vocal ?", false, false, false),
+                    TwitchIrcClient.TwitchChatMessage("techgeek", "TechGeek", "Licha rend les streams VR tellement plus simples !", "Licha rend les streams VR tellement plus simples !", true, true, false)
+                )
+                else -> listOf(
+                    TwitchIrcClient.TwitchChatMessage("system", "System", "Speech synthesis initialized successfully.", "Speech synthesis initialized successfully.", false, false, false),
+                    TwitchIrcClient.TwitchChatMessage("nightbot", "Nightbot", "Remember to subscribe to the channel for benefits!", "Remember to subscribe to the channel for benefits!", true, false, false),
+                    TwitchIrcClient.TwitchChatMessage("gamer_x", "Gamer_X", "Hello streamer! Love the gameplay today.", "Hello streamer! Love the gameplay today.", false, true, false),
+                    TwitchIrcClient.TwitchChatMessage("speedy_07", "Speedy_07", "Can you hear my text to speech message?", "Can you hear my text to speech message?", false, false, false),
+                    TwitchIrcClient.TwitchChatMessage("techgeek", "TechGeek", "This Licha reader makes VR streams so much easier!", "This Licha reader makes VR streams so much easier!", true, true, false)
+                )
+            }
+            _chatHistory.value = mockMessages
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         ircClient.disconnect()

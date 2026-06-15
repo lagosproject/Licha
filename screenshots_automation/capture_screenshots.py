@@ -55,44 +55,62 @@ def screencap(path):
 
 def capture_flow(form_factor):
     print(f"\n========================================================")
-    # Interactive guide per language
-    for lang in LANGS:
-        print(f"\n🌍 Locale Track: {lang.upper()}")
-        print("-" * 50)
+    print("🚀 Running FULLY AUTOMATED screenshot capture flow via ADB")
+    print("========================================================")
+    
+    emulated = False
+    try:
+        # Override screen size and density to emulate tablets on a phone device
+        if form_factor == "tablet_7":
+            print("  [DPI/DENSITY OVERRIDE] Emulating 7-inch Tablet (1200x1920, 320 DPI)...")
+            run_cmd("adb shell wm size 1200x1920")
+            run_cmd("adb shell wm density 320")
+            emulated = True
+            time.sleep(2.0)
+        elif form_factor == "tablet_10":
+            print("  [DPI/DENSITY OVERRIDE] Emulating 10-inch Tablet (1600x2560, 320 DPI)...")
+            run_cmd("adb shell wm size 1600x2560")
+            run_cmd("adb shell wm density 320")
+            emulated = True
+            time.sleep(2.0)
+            
+        screens = ["Login", "Chat", "Settings"]
         
-        # 1. Update app locale using Android 13 app-specific locale settings
-        print(f"  Setting Licha locale to {lang}...")
-        run_cmd(f"adb shell cmd locale set-app-locales {PACKAGE} --locales {lang}")
-        time.sleep(0.5)
-        
-        # 2. Reset app stack
-        run_cmd(f"adb shell am force-stop {PACKAGE}")
-        time.sleep(0.8)
-        
-        # 3. Launch Licha
-        print("  Starting Licha...")
-        run_cmd(f"adb shell am start -n {PACKAGE}/.MainActivity")
-        time.sleep(2.0)
-        
-        # Capture Login
-        print(f"\n👉 [STEP 1/3: LOGIN SCREEN]")
-        input("   Navigate to the LOGIN/AUTHENTICATION screen on the device and press [ENTER] to capture...")
-        screencap(os.path.join(RAW_DIR, form_factor, lang, "login.png"))
-        
-        # Capture Chat
-        print(f"\n👉 [STEP 2/3: CHAT SCREEN]")
-        input("   Connect to a chat channel, wait for a few messages to show, and press [ENTER] to capture...")
-        screencap(os.path.join(RAW_DIR, form_factor, lang, "chat.png"))
-        
-        # Capture Settings
-        print(f"\n👉 [STEP 3/3: SETTINGS SCREEN]")
-        input("   Navigate to the SETTINGS screen and press [ENTER] to capture...")
-        screencap(os.path.join(RAW_DIR, form_factor, lang, "settings.png"))
-        
-        # Force stop before next loop to be clean
-        run_cmd(f"adb shell am force-stop {PACKAGE}")
-        print(f"\n✅ Finished locale: {lang}")
-        
+        # Process each language locale
+        for lang in LANGS:
+            print(f"\n🌍 Locale Track: {lang.upper()}")
+            print("-" * 50)
+            
+            # 1. Update app locale
+            print(f"  Setting Licha locale to {lang}...")
+            run_cmd(f"adb shell cmd locale set-app-locales {PACKAGE} --locales {lang}")
+            time.sleep(0.5)
+            
+            for screen in screens:
+                # 2. Reset app stack
+                run_cmd(f"adb shell am force-stop {PACKAGE}")
+                time.sleep(0.5)
+                
+                # 3. Launch Licha in screenshot mode for target screen
+                print(f"  Launching {screen} screen...")
+                run_cmd(f"adb shell am start -n {PACKAGE}/.MainActivity --ez screenshot_mode true --es target_screen {screen} --es lang {lang}")
+                time.sleep(2.8)  # Wait for layout & mock data injection to settle
+                
+                # 4. Capture screenshot automatically
+                out_file = f"{screen.lower()}.png"
+                screencap(os.path.join(RAW_DIR, form_factor, lang, out_file))
+                
+            # Force stop after locale is done
+            run_cmd(f"adb shell am force-stop {PACKAGE}")
+            print(f"\n✅ Finished locale: {lang}")
+            
+    finally:
+        if emulated:
+            print("\n  [RESTORE] Resetting device screen size & density back to native settings...")
+            run_cmd("adb shell wm size reset")
+            run_cmd("adb shell wm density reset")
+            time.sleep(1.5)
+            
     print("\n🎉 Screenshot capture session completed successfully!")
     print("Compiling showcase images...")
     
@@ -102,6 +120,11 @@ def capture_flow(form_factor):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="ADB Screenshot Capturer for Licha")
+    parser.add_argument("--form-factor", choices=["phone", "tablet_7", "tablet_10"], help="Device form factor to capture")
+    args = parser.parse_args()
+
     print("=" * 60)
     print("   Licha (TwitchChatTTS) — ADB Screenshot Capturer")
     print("=" * 60)
@@ -113,19 +136,22 @@ def main():
     if not check_adb():
         sys.exit(1)
         
-    # Ask form factor
-    print("Which form factor are you capturing screenshots for?")
-    print("  1. Phone (default)")
-    print("  2. 7-inch Tablet (tablet_7)")
-    print("  3. 10-inch Tablet (tablet_10)")
-    
-    choice = input("\nEnter choice (1, 2, or 3): ").strip()
-    if choice == "2":
-        form_factor = "tablet_7"
-    elif choice == "3":
-        form_factor = "tablet_10"
+    if args.form_factor:
+        form_factor = args.form_factor
     else:
-        form_factor = "phone"
+        # Ask form factor
+        print("Which form factor are you capturing screenshots for?")
+        print("  1. Phone (default)")
+        print("  2. 7-inch Tablet (tablet_7)")
+        print("  3. 10-inch Tablet (tablet_10)")
+        
+        choice = input("\nEnter choice (1, 2, or 3): ").strip()
+        if choice == "2":
+            form_factor = "tablet_7"
+        elif choice == "3":
+            form_factor = "tablet_10"
+        else:
+            form_factor = "phone"
         
     print(f"\n🚀 Starting capture flow for form factor: {form_factor.upper()}")
     capture_flow(form_factor)
