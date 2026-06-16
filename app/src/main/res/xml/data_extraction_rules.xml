@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Backup / device-transfer rules for Android 12+ (API 31+).
+
+  The OAuth token and its AES keyset live in the EncryptedSharedPreferences file
+  "TwitchChatTTSSecureSettings.xml". That keyset is wrapped by an AndroidKeyStore master
+  key which is device-bound and is NEVER included in a backup. If the ciphertext were
+  restored to another device the missing master key would make it undecryptable (token loss
+  and potential crashes), so the secure prefs file is excluded from both cloud backup and
+  direct device-to-device transfer. Non-sensitive settings (DataStore, legacy prefs) are
+  still backed up normally.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="TwitchChatTTSSecureSettings.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="TwitchChatTTSSecureSettings.xml" />
+    </device-transfer>
+</data-extraction-rules>

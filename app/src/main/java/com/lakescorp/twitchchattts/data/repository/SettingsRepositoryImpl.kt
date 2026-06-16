@@ -7,7 +7,10 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKeys
+import com.lakescorp.twitchchattts.di.ApplicationScope
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -17,8 +20,9 @@ import javax.inject.Singleton
 
 @Singleton
 class SettingsRepositoryImpl @Inject constructor(
-    @ApplicationContext context: Context,
-    private val dataStore: DataStore<Preferences>
+    @ApplicationContext private val context: Context,
+    private val dataStore: DataStore<Preferences>,
+    @ApplicationScope private val appScope: CoroutineScope
 ) : SettingsRepository {
 
     // ── EncryptedSharedPreferences (OAuth token) ──────────────────────────────
@@ -33,8 +37,21 @@ class SettingsRepositoryImpl @Inject constructor(
     private val plainPrefs: SharedPreferences =
         context.getSharedPreferences("TwitchChatTTSLegacy", Context.MODE_PRIVATE)
 
-    private val encryptedPrefs: SharedPreferences by lazy {
-        try {
+    // KeyStore-backed encrypted prefs. Initialization (MasterKeys.getOrCreate +
+    // EncryptedSharedPreferences.create) performs KeyStore/disk I/O that can take hundreds
+    // of ms on a cold start, so it MUST NOT run on the main thread. It is lazy and is warmed
+    // up from [appScope] (Dispatchers.IO) in init; any accidental first access still pays the
+    // cost on whatever thread touches it, but the warm-up guarantees that thread isn't main.
+    private val encryptedPrefs: SharedPreferences by lazy { createEncryptedPrefs() }
+
+    private fun createEncryptedPrefs(): SharedPreferences {
+        val prefs = try {
+            // NOTE: MasterKeys is deprecated in favour of MasterKey.Builder, but that API only
+            // exists in security-crypto 1.1.0-alpha — we intentionally stay on the stable 1.0.0
+            // release rather than ship an alpha dependency. MasterKeys remains fully functional
+            // and uses the same default key alias, so the migration is purely cosmetic and can be
+            // done if/when 1.1.0 stabilises (existing tokens would stay decryptable).
+            @Suppress("DEPRECATION")
             val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
             EncryptedSharedPreferences.create(
                 "TwitchChatTTSSecureSettings",
@@ -52,15 +69,20 @@ class SettingsRepositoryImpl @Inject constructor(
             isStorageEncrypted = false
             plainPrefs
         }
+        // Migrate legacy plain oauth token into the (now-created) encrypted store, if present.
+        // Runs as part of first initialization so it inherits the off-main-thread guarantee.
+        val legacyToken = plainPrefs.getString("oauth", "") ?: ""
+        if (legacyToken.isNotEmpty() && prefs.getString("oauth", "").isNullOrEmpty()) {
+            prefs.edit().putString("oauth", legacyToken).apply()
+            plainPrefs.edit().remove("oauth").apply()
+        }
+        return prefs
     }
 
     init {
-        // Migrate legacy plain oauth token to EncryptedSharedPreferences if present
-        val legacyToken = plainPrefs.getString("oauth", "") ?: ""
-        if (legacyToken.isNotEmpty() && encryptedPrefs.getString("oauth", "").isNullOrEmpty()) {
-            encryptedPrefs.edit().putString("oauth", legacyToken).apply()
-            plainPrefs.edit().remove("oauth").apply()
-        }
+        // Warm up the KeyStore-backed prefs off the main thread. The DI graph is built on the
+        // main thread (ViewModel injection), so without this the lazy init would block it.
+        appScope.launch { encryptedPrefs }
     }
 
     override fun getOauthToken(): String = encryptedPrefs.getString("oauth", "") ?: ""
@@ -68,10 +90,11 @@ class SettingsRepositoryImpl @Inject constructor(
         encryptedPrefs.edit().putString("oauth", token).apply()
     }
 
-    // ClientId stays in plain SharedPreferences (not sensitive; synchronous read needed in AuthManagerImpl constructor)
-    override fun getClientId(): String = plainPrefs.getString("clientId", "") ?: ""
-    override fun setClientId(id: String) {
-        plainPrefs.edit().putString("clientId", id).apply()
+    // OAuth CSRF nonce persisted in plain prefs so it survives the round-trip to the external
+    // browser (and possible process death) before the redirect comes back.
+    override fun getPendingAuthState(): String = plainPrefs.getString("pendingAuthState", "") ?: ""
+    override fun setPendingAuthState(state: String) {
+        plainPrefs.edit().putString("pendingAuthState", state).apply()
     }
 
     // ── DataStore preference keys ──────────────────────────────────────────────
