@@ -1,27 +1,58 @@
 package com.lakescorp.twitchchattts.data
 
 import android.util.Log
+import com.lakescorp.twitchchattts.di.ApplicationScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.min
 
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TwitchIrcClient @Inject constructor(
-    sharedClient: OkHttpClient
+    sharedClient: OkHttpClient,
+    @ApplicationScope private val appScope: CoroutineScope
 ) {
 
     private val client = sharedClient.newBuilder()
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .build()
-    private var webSocket: WebSocket? = null
-    private var isClosed = false
-    private var listener: IrcListener? = null
+    // These are touched from OkHttp's dispatcher threads and from connect()/disconnect();
+    // @Volatile guarantees cross-thread visibility.
+    @Volatile private var webSocket: WebSocket? = null
+    @Volatile private var listener: IrcListener? = null
+
+    // Monotonic connection epoch. Every connect()/disconnect() bumps it; each WebSocket
+    // captures the epoch it was opened under and ignores its callbacks once it is no longer
+    // the current connection. This fixes the race where a stale socket's onClosed flipped
+    // the UI to Disconnected immediately after a new connection (e.g. on channel switch).
+    private val generation = AtomicInteger(0)
+
+    // ── Auto-reconnect state ───────────────────────────────────────────────────
+    // Last successful connect() arguments, replayed when an unexpected drop triggers a reconnect.
+    @Volatile private var lastUsername: String? = null
+    @Volatile private var lastToken: String? = null
+    @Volatile private var lastChannel: String? = null
+    // Pending backoff job (at most one in flight); cancelled by disconnect() and superseded connects.
+    @Volatile private var reconnectJob: Job? = null
+    // Backoff exponent; reset to 0 on a successful onOpen, incremented per attempt.
+    @Volatile private var reconnectAttempts = 0
+
+    private companion object {
+        const val BASE_RECONNECT_DELAY_MS = 1_000L
+        const val MAX_RECONNECT_DELAY_MS = 30_000L
+        const val MAX_BACKOFF_EXPONENT = 5 // caps the doubling at 2^5 * base = 32s before the ceiling
+    }
 
     interface IrcListener {
         fun onConnected()
@@ -42,6 +73,13 @@ class TwitchIrcClient @Inject constructor(
 
     fun connect(username: String, oauthToken: String, channel: String, listener: IrcListener) {
         this.listener = listener
+        // Remember the raw arguments so an unexpected drop can transparently replay this connect.
+        lastUsername = username
+        lastToken = oauthToken
+        lastChannel = channel
+        // A fresh (re)connect supersedes any pending backoff attempt.
+        reconnectJob?.cancel()
+
         val token = if (oauthToken.startsWith("oauth:", ignoreCase = true)) {
             oauthToken
         } else {
@@ -52,10 +90,15 @@ class TwitchIrcClient @Inject constructor(
             .url("wss://irc-ws.chat.twitch.tv:443")
             .build()
 
-        isClosed = false
+        // Capture the epoch this socket is opened under. If a later connect()/disconnect()
+        // bumps `generation`, every callback below short-circuits so a stale socket can no
+        // longer mutate listener state (e.g. flip the UI to Disconnected after a reconnect).
+        val myGen = generation.incrementAndGet()
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                if (isClosed) return
+                if (myGen != generation.get()) return
+                // Connection is healthy again — clear the backoff so the next drop starts fresh.
+                reconnectAttempts = 0
                 // CAP REQ must be sent first, before PASS/NICK/JOIN, per Twitch IRC spec.
                 // This ensures all subsequent messages arrive with their full @tags metadata.
                 webSocket.send("CAP REQ :twitch.tv/tags twitch.tv/commands twitch.tv/membership")
@@ -68,27 +111,68 @@ class TwitchIrcClient @Inject constructor(
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                if (isClosed) return
+                if (myGen != generation.get()) return
                 handleRawMessage(text)
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                if (myGen != generation.get()) return
                 listener.onDisconnected("Closing: $reason ($code)")
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                if (myGen != generation.get()) return
                 listener.onDisconnected("Closed: $reason ($code)")
+                // Server-side close that we didn't initiate (disconnect() would have bumped the
+                // epoch and short-circuited above) — attempt to recover.
+                scheduleReconnect(myGen)
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                if (isClosed) return
+                if (myGen != generation.get()) return
                 listener.onError(t.message ?: "Connection failure")
+                // Network-level failure (terminal in OkHttp; onClosed won't follow) — recover.
+                scheduleReconnect(myGen)
             }
         })
     }
 
+    /**
+     * Schedules a single exponential-backoff reconnect for the connection identified by [gen].
+     * No-ops if a newer connect()/disconnect() has already superseded that generation, so a
+     * stale socket can never resurrect a connection the user has since changed or torn down.
+     */
+    private fun scheduleReconnect(gen: Int) {
+        if (gen != generation.get()) return
+
+        val exponent = min(reconnectAttempts, MAX_BACKOFF_EXPONENT)
+        val delayMs = min(BASE_RECONNECT_DELAY_MS shl exponent, MAX_RECONNECT_DELAY_MS)
+        reconnectAttempts++
+
+        reconnectJob?.cancel()
+        reconnectJob = appScope.launch {
+            delay(delayMs)
+            // Re-check after the wait: the user may have switched channel / logged out meanwhile.
+            if (gen != generation.get()) return@launch
+            val u = lastUsername
+            val t = lastToken
+            val c = lastChannel
+            val l = listener
+            if (u != null && t != null && c != null && l != null) {
+                Log.d("TwitchIrcClient", "Reconnecting (attempt $reconnectAttempts, waited ${delayMs}ms)")
+                connect(u, t, c, l)
+            }
+        }
+    }
+
     fun disconnect() {
-        isClosed = true
+        // Bumping the epoch first invalidates the current socket's callbacks before we close it,
+        // so its onClosing/onClosed/onFailure won't fire stale listener notifications.
+        generation.incrementAndGet()
+        // Stop any pending backoff and reset it; this is a deliberate teardown, not a drop.
+        reconnectJob?.cancel()
+        reconnectJob = null
+        reconnectAttempts = 0
         webSocket?.close(1000, "User disconnected")
         webSocket = null
     }
@@ -98,19 +182,60 @@ class TwitchIrcClient @Inject constructor(
         for (line in lines) {
             if (line.isEmpty()) continue
 
+            // PING carries no tags/prefix ("PING :tmi.twitch.tv"), so a prefix check is enough.
             if (line.startsWith("PING")) {
                 webSocket?.send("PONG :tmi.twitch.tv")
                 Log.d("TwitchIrcClient", "Sent PONG")
                 continue
             }
 
-            if (line.contains("PRIVMSG")) {
-                val parsed = parseIrcMessage(line)
-                if (parsed != null) {
-                    listener?.onMessageReceived(parsed)
+            // Dispatch on the actual IRC command token, NOT a substring scan: a chat message
+            // body can contain the words "NOTICE"/"PRIVMSG"/"Login authentication failed", and
+            // matching those loosely would let any viewer's message spoof control flow (e.g.
+            // force a disconnect). The command field is server-controlled, so it can't be forged.
+            when (ircCommandOf(line)) {
+                "NOTICE" -> {
+                    // Twitch sends this NOTICE when PASS/NICK auth fails (bad or expired token).
+                    // Reconnecting would loop forever, so treat it as fatal: bump the epoch to
+                    // silence this socket, block any scheduled reconnect, then surface the error.
+                    if (line.contains("Login authentication failed")) {
+                        generation.incrementAndGet()
+                        reconnectJob?.cancel()
+                        reconnectJob = null
+                        listener?.onError("Authentication failed. Please log in again.")
+                        webSocket?.close(1000, "Authentication failed")
+                        webSocket = null
+                        return
+                    }
+                }
+                "PRIVMSG" -> {
+                    parseIrcMessage(line)?.let { listener?.onMessageReceived(it) }
                 }
             }
         }
+    }
+
+    /**
+     * Returns the IRC command token of [line] — i.e. the word after the optional `@tags` and
+     * `:prefix` segments — or null if the line is malformed. Used to route messages by their
+     * true command rather than by fragile substring matching against the whole line.
+     */
+    private fun ircCommandOf(line: String): String? {
+        var rest = line.trimStart()
+        // Skip "@tag1=...;tag2=... " IRCv3 message tags.
+        if (rest.startsWith("@")) {
+            val sp = rest.indexOf(' ')
+            if (sp == -1) return null
+            rest = rest.substring(sp + 1).trimStart()
+        }
+        // Skip ":nick!user@host " source prefix.
+        if (rest.startsWith(":")) {
+            val sp = rest.indexOf(' ')
+            if (sp == -1) return null
+            rest = rest.substring(sp + 1).trimStart()
+        }
+        val sp = rest.indexOf(' ')
+        return if (sp == -1) rest.ifEmpty { null } else rest.substring(0, sp)
     }
 
     private fun parseIrcMessage(line: String): TwitchChatMessage? {

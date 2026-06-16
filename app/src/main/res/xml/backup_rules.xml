@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Auto Backup rules for Android 11 and below (API < 31).
+
+  Excludes the EncryptedSharedPreferences file holding the OAuth token + its KeyStore-wrapped
+  keyset; see data_extraction_rules.xml for the full rationale. Everything else is backed up.
+-->
+<full-backup-content>
+    <exclude domain="sharedpref" path="TwitchChatTTSSecureSettings.xml" />
+</full-backup-content>

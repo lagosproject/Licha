@@ -5,6 +5,21 @@ plugins {
     id 'com.google.dagger.hilt.android'
 }
 
+// Resolve TWITCH_CLIENT_ID with a clear precedence: env var → local.properties.
+// Fail fast with an actionable message instead of silently emitting the literal "null".
+def localProps = new Properties()
+def localPropsFile = file("${rootProject.projectDir}/local.properties")
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream { localProps.load(it) }
+}
+
+def twitchClientId = System.getenv("TWITCH_CLIENT_ID") ?: localProps['TWITCH_CLIENT_ID']
+if (twitchClientId == null || twitchClientId.toString().trim().isEmpty()) {
+    throw new GradleException(
+        "TWITCH_CLIENT_ID is not configured. Set it in local.properties " +
+        "(TWITCH_CLIENT_ID=your_id) or export it as an environment variable.")
+}
+
 android {
     namespace 'com.lakescorp.twitchchattts'
     compileSdk 34
@@ -13,8 +28,10 @@ android {
         applicationId "com.lakescorp.twitchchattts"
         minSdk 24
         targetSdk 34
-        versionCode 10
-        versionName '0.0.10'
+        versionCode 12
+        versionName '1.0.0'
+
+        buildConfigField "String", "TWITCH_CLIENT_ID", "\"${twitchClientId}\""
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -24,16 +41,19 @@ android {
 
     signingConfigs {
         release {
-            def keystorePath = System.getenv("KEYSTORE_PATH") ?: (project.findProperty("RELEASE_KEYSTORE_PATH") ?: "release.keystore")
-            def keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("RELEASE_KEYSTORE_PASSWORD") ?: "")
-            def keyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("RELEASE_KEY_ALIAS") ?: "")
-            def keyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("RELEASE_KEY_PASSWORD") ?: "")
+            // Local var names must NOT match the signingConfig DSL setter names (keyAlias,
+            // keyPassword), otherwise Groovy resolves `keyAlias keyAlias` as calling the String
+            // rather than invoking the setter — which fails the whole build.
+            def ksPath = System.getenv("KEYSTORE_PATH") ?: (project.findProperty("RELEASE_KEYSTORE_PATH") ?: "release.keystore")
+            def ksPassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("RELEASE_KEYSTORE_PASSWORD") ?: "")
+            def ksKeyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("RELEASE_KEY_ALIAS") ?: "")
+            def ksKeyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("RELEASE_KEY_PASSWORD") ?: "")
 
-            if (keystorePassword && keyAlias && keyPassword) {
-                storeFile file(keystorePath)
-                storePassword keystorePassword
-                keyAlias keyAlias
-                keyPassword keyPassword
+            if (ksPassword && ksKeyAlias && ksKeyPassword) {
+                storeFile file(ksPath)
+                storePassword ksPassword
+                keyAlias ksKeyAlias
+                keyPassword ksKeyPassword
             }
         }
     }
@@ -57,6 +77,7 @@ android {
     }
     buildFeatures {
         compose true
+        buildConfig true
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.8'

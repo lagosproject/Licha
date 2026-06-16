@@ -18,10 +18,15 @@ interface AuthManager {
     val loginState: StateFlow<LoginState>
     val username: StateFlow<String>
     val oauthToken: StateFlow<String>
-    val clientId: StateFlow<String>
 
     fun setOauthToken(token: String)
-    fun setClientId(id: String)
+
+    /**
+     * Suspends until the persisted OAuth token has been loaded from encrypted storage.
+     * The load happens off the main thread, so callers that depend on [oauthToken]'s value
+     * (e.g. auto-login on startup) must await this first to avoid racing an empty token.
+     */
+    suspend fun awaitInitialized()
 
     /** Builds the Twitch OAuth authorization URL, or null if no Client ID is set. */
     fun getAuthorizeUrl(): String?

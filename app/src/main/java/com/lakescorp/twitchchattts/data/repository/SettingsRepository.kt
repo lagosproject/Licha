@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
  *
  * # Storage Tiers
  * - OAuth token: [EncryptedSharedPreferences] (AES-256-GCM). Synchronous read/write.
- * - Client ID: plain [SharedPreferences]. Synchronous read/write.
+ * - OAuth CSRF nonce: plain [SharedPreferences]. Synchronous read/write.
  * - All other settings: [DataStore<Preferences>]. Async [Flow]-based reads, suspend writes.
  *
  * # Encryption fallback
@@ -24,8 +24,9 @@ interface SettingsRepository {
     fun getOauthToken(): String
     fun setOauthToken(token: String)
 
-    fun getClientId(): String
-    fun setClientId(id: String)
+    /** CSRF nonce for the in-flight OAuth authorization request. Not sensitive (integrity, not secrecy). */
+    fun getPendingAuthState(): String
+    fun setPendingAuthState(state: String)
 
     // ── DataStore-backed reactive streams ──────────────────────────────────────
 

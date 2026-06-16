@@ -43,17 +43,15 @@ class ChatViewModel @Inject constructor(
     private val filterService: ChatFilterService
 ) : ViewModel(), TwitchIrcClient.IrcListener {
 
-    companion object {
-        // Hardcode your Twitch Client ID here if you want to hide the input field by default.
-        const val DEFAULT_CLIENT_ID = ""
-    }
-
     // ── Auth state (delegated to AuthManager) ─────────────────────────────────
     val loginState: StateFlow<AuthManager.LoginState> = authManager.loginState
     val username: StateFlow<String> = authManager.username
     val oauthToken: StateFlow<String> = authManager.oauthToken
-    val clientId: StateFlow<String> = authManager.clientId
-    val isStorageEncrypted: Boolean = settingsRepository.isStorageEncrypted
+
+    // Crypto availability is only known after the encrypted store is initialized off the main
+    // thread, so it's reactive: defaults to true (optimistic) and is corrected in init.
+    private val _isStorageEncrypted = MutableStateFlow(true)
+    val isStorageEncrypted: StateFlow<Boolean> = _isStorageEncrypted.asStateFlow()
 
     // ── Connection state ──────────────────────────────────────────────────────
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
@@ -112,6 +110,11 @@ class ChatViewModel @Inject constructor(
             settingsRepository.selectedVoice.first().let { if (it.isNotEmpty()) ttsManager.selectVoice(it) }
             ttsManager.initialize()
 
+            // Wait for the encrypted store / token to load off the main thread before reading
+            // them. After this, isStorageEncrypted reflects the real KeyStore outcome.
+            authManager.awaitInitialized()
+            _isStorageEncrypted.value = settingsRepository.isStorageEncrypted
+
             // Auto-login if a token was saved from a previous session
             val savedToken = authManager.oauthToken.value.trim()
             if (savedToken.isNotEmpty()) {
@@ -123,7 +126,6 @@ class ChatViewModel @Inject constructor(
     // ── Auth delegation ───────────────────────────────────────────────────────
 
     fun setOauthToken(token: String) = authManager.setOauthToken(token)
-    fun setClientId(id: String) = authManager.setClientId(id)
     fun getAuthorizeUrl(): String? = authManager.getAuthorizeUrl()
 
     fun handleDeepLink(intentUri: String?) {
@@ -289,38 +291,6 @@ class ChatViewModel @Inject constructor(
     override fun onError(error: String) {
         viewModelScope.launch(Dispatchers.Main.immediate) {
             _connectionState.value = ConnectionState.Error(error)
-        }
-    }
-
-    fun injectMockData(lang: String) {
-        viewModelScope.launch {
-            _connectionState.value = ConnectionState.Connected
-            settingsRepository.setChannel("licha")
-            
-            val mockMessages = when (lang) {
-                "es-ES" -> listOf(
-                    TwitchIrcClient.TwitchChatMessage("system", "Sistema", "Síntesis de voz inicializada correctamente.", "Síntesis de voz inicializada correctamente.", false, false, false),
-                    TwitchIrcClient.TwitchChatMessage("nightbot", "Nightbot", "¡Recuerda suscribirte al canal para obtener beneficios!", "¡Recuerda suscribirte al canal para obtener beneficios!", true, false, false),
-                    TwitchIrcClient.TwitchChatMessage("gamer_x", "Gamer_X", "¡Hola! Me encanta el stream de hoy.", "¡Hola! Me encanta el stream de hoy.", false, true, false),
-                    TwitchIrcClient.TwitchChatMessage("speedy_07", "Speedy_07", "¿Puedes oír mi mensaje de voz a texto?", "¿Puedes oír mi mensaje de voz a texto?", false, false, false),
-                    TwitchIrcClient.TwitchChatMessage("techgeek", "TechGeek", "¡Licha hace que los streams de VR sean mucho más fáciles!", "¡Licha hace que los streams de VR sean mucho más fáciles!", true, true, false)
-                )
-                "fr-FR" -> listOf(
-                    TwitchIrcClient.TwitchChatMessage("system", "Système", "Synthèse vocale initialisée avec succès.", "Synthèse vocale initialisée avec succès.", false, false, false),
-                    TwitchIrcClient.TwitchChatMessage("nightbot", "Nightbot", "Pensez à vous abonner pour soutenir la chaîne !", "Pensez à vous abonner pour soutenir la chaîne !", true, false, false),
-                    TwitchIrcClient.TwitchChatMessage("gamer_x", "Gamer_X", "Salut ! Super stream aujourd'hui.", "Salut ! Super stream aujourd'hui.", false, true, false),
-                    TwitchIrcClient.TwitchChatMessage("speedy_07", "Speedy_07", "Est-ce que tu entends mon message vocal ?", "Est-ce que tu entends mon message vocal ?", false, false, false),
-                    TwitchIrcClient.TwitchChatMessage("techgeek", "TechGeek", "Licha rend les streams VR tellement plus simples !", "Licha rend les streams VR tellement plus simples !", true, true, false)
-                )
-                else -> listOf(
-                    TwitchIrcClient.TwitchChatMessage("system", "System", "Speech synthesis initialized successfully.", "Speech synthesis initialized successfully.", false, false, false),
-                    TwitchIrcClient.TwitchChatMessage("nightbot", "Nightbot", "Remember to subscribe to the channel for benefits!", "Remember to subscribe to the channel for benefits!", true, false, false),
-                    TwitchIrcClient.TwitchChatMessage("gamer_x", "Gamer_X", "Hello streamer! Love the gameplay today.", "Hello streamer! Love the gameplay today.", false, true, false),
-                    TwitchIrcClient.TwitchChatMessage("speedy_07", "Speedy_07", "Can you hear my text to speech message?", "Can you hear my text to speech message?", false, false, false),
-                    TwitchIrcClient.TwitchChatMessage("techgeek", "TechGeek", "This Licha reader makes VR streams so much easier!", "This Licha reader makes VR streams so much easier!", true, true, false)
-                )
-            }
-            _chatHistory.value = mockMessages
         }
     }
 

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,6 +31,11 @@ class TtsManagerImpl @Inject constructor(
     override val availableVoices: StateFlow<List<TtsManager.VoiceInfo>> = _availableVoices.asStateFlow()
 
     private var tts: TextToSpeech? = null
+
+    // Monotonic source of per-utterance IDs. System.currentTimeMillis() collided whenever two
+    // messages were spoken within the same millisecond (common during chat bursts), which breaks
+    // any per-utterance progress/queue tracking. A counter guarantees each ID is unique.
+    private val utteranceCounter = AtomicLong(0)
 
     // Pending parameters — applied once the engine is ready
     private var currentPitch = 1.0f
@@ -84,7 +90,8 @@ class TtsManagerImpl @Inject constructor(
         val params = Bundle().apply {
             putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, currentVolume)
         }
-        tts?.speak(text, TextToSpeech.QUEUE_ADD, params, System.currentTimeMillis().toString())
+        val utteranceId = "utt-${utteranceCounter.incrementAndGet()}"
+        tts?.speak(text, TextToSpeech.QUEUE_ADD, params, utteranceId)
     }
 
     override fun setPitch(value: Float) {

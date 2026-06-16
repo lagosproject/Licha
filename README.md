@@ -27,6 +27,7 @@ Licha (TwitchChatTTS) is a beautiful, modern Android application that connects t
 ---
 
 ## 📖 Table of Contents
+- [Screenshots](#screenshots)
 - [About the Project](#about-the-project)
 - [Key Features](#key-features)
 - [Architecture & Tech Stack](#architecture--tech-stack)
@@ -40,6 +41,22 @@ Licha (TwitchChatTTS) is a beautiful, modern Android application that connects t
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots_automation/output/phone/en-US/showcase_login.png" alt="Login Screen" width="30%">
+  <img src="screenshots_automation/output/phone/en-US/showcase_chat.png" alt="Chat Screen" width="30%">
+  <img src="screenshots_automation/output/phone/en-US/showcase_settings.png" alt="Settings Screen" width="30%">
+</p>
+
+<p align="center">
+  <img src="screenshots_automation/output/tablet_10/en-US/showcase_login.png" alt="Tablet Login" width="30%">
+  <img src="screenshots_automation/output/tablet_10/en-US/showcase_chat.png" alt="Tablet Chat" width="30%">
+  <img src="screenshots_automation/output/tablet_10/en-US/showcase_settings.png" alt="Tablet Settings" width="30%">
+</p>
+
+---
+
 ## ℹ️ About the Project
 
 Licha provides a hands-free way to stay connected with your Twitch community. By logging in securely via OAuth, Licha connects to the Twitch IRC server over WebSockets and uses the Android Text-to-Speech API to vocalize incoming chat messages. This makes it perfect for VR streamers, simulator pilots, console players, or anyone who wants to hear chat while focusing on gameplay.
@@ -49,9 +66,8 @@ Licha provides a hands-free way to stay connected with your Twitch community. By
 ## ✨ Key Features
 
 - 👂 **Real-time Text-to-Speech**: Listen to Twitch chat messages in real time.
-- 🔒 **Secure OAuth Login**: Authenticate directly with Twitch using secure client credentials.
+- 🔒 **Secure OAuth Login**: One-tap authentication via Twitch's browser OAuth flow — no manual tokens needed.
 - 🛡️ **Credential Security**: OAuth tokens are stored securely using Android's `EncryptedSharedPreferences`.
-- ⚙️ **Custom Client ID**: Easily configure your own Twitch Application Client ID or use the default.
 - 🎨 **Modern Interface**: Designed using Jetpack Compose and Material 3 with support for dark mode.
 - 🚀 **WebSocket Connection**: Low-latency chat synchronization using OkHttp WebSockets.
 
@@ -111,21 +127,19 @@ Licha supports dynamic configuration of your Twitch API credentials.
 3.  Obtain your **Client ID**.
 
 ### Environment Setup
-You can reference the [.env.example](file:///.env.example) template to configure build configurations.
-If you wish to hardcode a default Client ID for your own custom build, you can set `DEFAULT_CLIENT_ID` in [ChatViewModel.kt](file:///home/vant/Documentos/Licha/app/src/main/java/com/lakescorp/twitchchattts/ChatViewModel.kt#L48):
-```kotlin
-const val DEFAULT_CLIENT_ID = "your_twitch_client_id_here"
+Add your Client ID to `local.properties` (this file is gitignored and never committed):
+```properties
+TWITCH_CLIENT_ID=your_twitch_client_id_here
 ```
+The build system injects it automatically into `BuildConfig.TWITCH_CLIENT_ID` at compile time.
 
 ---
 
 ## 💡 Usage
 
-1.  **Configure Credentials**: Open Licha on your device and input your **Twitch Client ID**.
-2.  **Authenticate**: Click **Login** to authorize the application. This will open a browser window requesting access to read and write in your Twitch chat.
-3.  **Get Token**: Copy the generated OAuth token and paste it back into Licha.
-4.  **Connect**: Input your **Channel Name** (e.g., the Twitch channel you want to listen to) and click **Connect**.
-5.  **Listen**: Put on your headphones and hear the chat!
+1.  **Authenticate**: Tap **Authorize with Twitch** — a browser window will open to complete Twitch OAuth. The app handles the redirect automatically.
+2.  **Connect**: Input your **Channel Name** (e.g., the Twitch channel you want to listen to) and tap **Connect**.
+3.  **Listen**: Put on your headphones and hear the chat!
 
 ---
 
