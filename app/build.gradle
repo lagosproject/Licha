@@ -25,7 +25,10 @@ android {
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.lakescorp.twitchchattts"
+        // Play Store app identity. Kept distinct from `namespace` (com.lakescorp.twitchchattts,
+        // which matches the source package dirs) — the Play Console registered this app as
+        // com.LakesCorp.TwitchChatTTS, and the applicationId must match it exactly.
+        applicationId "com.LakesCorp.TwitchChatTTS"
         minSdk 24
         targetSdk 34
         versionCode 12
