@@ -28,8 +28,8 @@ android {
         applicationId "com.lakescorp.twitchchattts"
         minSdk 24
         targetSdk 34
-        versionCode 10
-        versionName '0.0.10'
+        versionCode 12
+        versionName '1.0.0'
 
         buildConfigField "String", "TWITCH_CLIENT_ID", "\"${twitchClientId}\""
 
@@ -41,16 +41,19 @@ android {
 
     signingConfigs {
         release {
-            def keystorePath = System.getenv("KEYSTORE_PATH") ?: (project.findProperty("RELEASE_KEYSTORE_PATH") ?: "release.keystore")
-            def keystorePassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("RELEASE_KEYSTORE_PASSWORD") ?: "")
-            def keyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("RELEASE_KEY_ALIAS") ?: "")
-            def keyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("RELEASE_KEY_PASSWORD") ?: "")
+            // Local var names must NOT match the signingConfig DSL setter names (keyAlias,
+            // keyPassword), otherwise Groovy resolves `keyAlias keyAlias` as calling the String
+            // rather than invoking the setter — which fails the whole build.
+            def ksPath = System.getenv("KEYSTORE_PATH") ?: (project.findProperty("RELEASE_KEYSTORE_PATH") ?: "release.keystore")
+            def ksPassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("RELEASE_KEYSTORE_PASSWORD") ?: "")
+            def ksKeyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("RELEASE_KEY_ALIAS") ?: "")
+            def ksKeyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("RELEASE_KEY_PASSWORD") ?: "")
 
-            if (keystorePassword && keyAlias && keyPassword) {
-                storeFile file(keystorePath)
-                storePassword keystorePassword
-                keyAlias keyAlias
-                keyPassword keyPassword
+            if (ksPassword && ksKeyAlias && ksKeyPassword) {
+                storeFile file(ksPath)
+                storePassword ksPassword
+                keyAlias ksKeyAlias
+                keyPassword ksKeyPassword
             }
         }
     }

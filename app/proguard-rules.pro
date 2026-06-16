@@ -41,10 +41,13 @@
 
 # ------------------------------------------------------------------------------
 # 5. EncryptedSharedPreferences / Tink (via security-crypto:1.0.0)
-#    security-crypto bundles its own consumer rules; no extra rules needed here.
+#    security-crypto bundles consumer rules, but Tink still references ErrorProne
+#    annotations that are compile-only (not on the runtime classpath), which fails
+#    R8's missing-class check. They are safe to suppress.
 #    If you upgrade to security-crypto:1.1.0-alpha, add:
 #    -keep class com.google.crypto.tink.** { *; }
 # ------------------------------------------------------------------------------
+-dontwarn com.google.errorprone.annotations.**
 
 # ------------------------------------------------------------------------------
 # 6. Hilt — ships its own consumer rules via hilt-android AAR.
