@@ -59,3 +59,4 @@ screenshots_automation/output/
 screenshots_automation/google_play_prep*.py
 screenshots_automation/screenshot_maker*.py
 screenshots_automation/split_config*.json
+.vscode/settings.json
