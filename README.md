@@ -20,8 +20,11 @@
   <a href="https://developer.android.com/jetpack/compose">
     <img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-blue?style=flat-square&logo=jetpackcompose" alt="Compose">
   </a>
+</p>
+
+<p align="center">
   <a href="https://play.google.com/store/apps/details?id=com.LakesCorp.TwitchChatTTS">
-    <img src="https://img.shields.io/badge/Get%20it%20on-Google%20Play-green?style=flat-square&logo=googleplay" alt="Get it on Google Play">
+    <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" width="200">
   </a>
 </p>
 
