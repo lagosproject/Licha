@@ -20,9 +20,12 @@
   <a href="https://developer.android.com/jetpack/compose">
     <img src="https://img.shields.io/badge/Jetpack%20Compose-Material%203-blue?style=flat-square&logo=jetpackcompose" alt="Compose">
   </a>
+  <a href="https://play.google.com/store/apps/details?id=com.LakesCorp.TwitchChatTTS">
+    <img src="https://img.shields.io/badge/Get%20it%20on-Google%20Play-green?style=flat-square&logo=googleplay" alt="Get it on Google Play">
+  </a>
 </p>
 
-Licha (TwitchChatTTS) is a beautiful, modern Android application that connects to your Twitch chat and reads messages aloud using Android's native Text-to-Speech (TTS) engine. It is designed to help stream broadcasters and moderators listen to their channel's chat conversations seamlessly without looking at a screen.
+Licha (TwitchChatTTS) is a beautiful, modern Android application that connects to your Twitch chat and reads messages aloud using Android's native Text-to-Speech (TTS) engine. It is designed to he[...]
 
 ---
 
@@ -59,7 +62,7 @@ Licha (TwitchChatTTS) is a beautiful, modern Android application that connects t
 
 ## ℹ️ About the Project
 
-Licha provides a hands-free way to stay connected with your Twitch community. By logging in securely via OAuth, Licha connects to the Twitch IRC server over WebSockets and uses the Android Text-to-Speech API to vocalize incoming chat messages. This makes it perfect for VR streamers, simulator pilots, console players, or anyone who wants to hear chat while focusing on gameplay.
+Licha provides a hands-free way to stay connected with your Twitch community. By logging in securely via OAuth, Licha connects to the Twitch IRC server over WebSockets and uses the Android Text-to[...]
 
 ---
 
