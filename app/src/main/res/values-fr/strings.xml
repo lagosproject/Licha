@@ -52,4 +52,26 @@
     <string name="offline_status">Déconnecté</string>
     <string name="error_status">Erreur de connexion</string>
     <string name="security_warning">Avertissement de sécurité : Le stockage sécurisé n\'est pas disponible sur cet appareil. Votre jeton OAuth sera enregistré en texte brut.</string>
+
+    <!-- Background Playback & Settings -->
+    <string name="background_service_title">Lecture en Arrière-Plan</string>
+    <string name="keep_screen_on">Garder l\'Écran Allumé</string>
+    <string name="keep_screen_on_desc">Empêcher la mise en veille de l\'écran lors de l\'affichage du chat</string>
+    <string name="battery_optimization">Optimisation de la Batterie</string>
+    <string name="battery_optimization_desc">Assurer que la lecture en arrière-plan ne soit pas interrompue par l\'économiseur de batterie</string>
+    <string name="battery_unrestricted">Non restreinte (Recommandé)</string>
+    <string name="battery_optimized">Optimisée (Appuyer pour configurer)</string>
+
+    <!-- About & Project -->
+    <string name="about_section">À Propos &amp; Communauté</string>
+    <string name="github_repository">Dépôt GitHub</string>
+    <string name="github_repository_desc">Voir le code source, signaler des bugs et ajouter une étoile sur GitHub</string>
+    <string name="app_version">Version</string>
+
+    <!-- Foreground Service -->
+    <string name="service_notification_channel_name">Service de Lecture du Chat</string>
+    <string name="service_notification_channel_desc">Maintient la connexion TTS du chat Twitch en arrière-plan</string>
+    <string name="service_notification_title">Licha - Twitch Chat TTS</string>
+    <string name="service_notification_connected">Écoute du chat sur #%1$s</string>
+    <string name="service_action_stop">Arrêter</string>
 </resources>

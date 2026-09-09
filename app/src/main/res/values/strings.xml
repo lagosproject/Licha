@@ -52,4 +52,26 @@
     <string name="offline_status">Offline</string>
     <string name="error_status">Connection error</string>
     <string name="security_warning">Security Warning: Secure storage is unavailable on this device. Your OAuth token will be saved in plaintext format.</string>
+
+    <!-- Background Playback & Settings -->
+    <string name="background_service_title">Background Playback</string>
+    <string name="keep_screen_on">Keep Screen On</string>
+    <string name="keep_screen_on_desc">Prevent the screen from sleeping while viewing chat</string>
+    <string name="battery_optimization">Battery Optimization</string>
+    <string name="battery_optimization_desc">Ensure background chat playback is not killed by battery saving</string>
+    <string name="battery_unrestricted">Unrestricted (Recommended)</string>
+    <string name="battery_optimized">Optimized (Tap to configure)</string>
+
+    <!-- About & Project -->
+    <string name="about_section">About &amp; Community</string>
+    <string name="github_repository">GitHub Repository</string>
+    <string name="github_repository_desc">View source code, report issues, and star on GitHub</string>
+    <string name="app_version">Version</string>
+
+    <!-- Foreground Service -->
+    <string name="service_notification_channel_name">Twitch Chat TTS Service</string>
+    <string name="service_notification_channel_desc">Maintains real-time Twitch chat TTS connection in the background</string>
+    <string name="service_notification_title">Licha - Twitch Chat TTS</string>
+    <string name="service_notification_connected">Listening to chat in #%1$s</string>
+    <string name="service_action_stop">Stop</string>
 </resources>

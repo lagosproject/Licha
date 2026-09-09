@@ -22,7 +22,7 @@ if (twitchClientId == null || twitchClientId.toString().trim().isEmpty()) {
 
 android {
     namespace 'com.lakescorp.twitchchattts'
-    compileSdk 34
+    compileSdk 36
 
     defaultConfig {
         // Play Store app identity. Kept distinct from `namespace` (com.lakescorp.twitchchattts,
@@ -30,7 +30,7 @@ android {
         // com.LakesCorp.TwitchChatTTS, and the applicationId must match it exactly.
         applicationId "com.LakesCorp.TwitchChatTTS"
         minSdk 24
-        targetSdk 34
+        targetSdk 36
         versionCode 12
         versionName '1.0.0'
 
@@ -47,10 +47,10 @@ android {
             // Local var names must NOT match the signingConfig DSL setter names (keyAlias,
             // keyPassword), otherwise Groovy resolves `keyAlias keyAlias` as calling the String
             // rather than invoking the setter — which fails the whole build.
-            def ksPath = System.getenv("KEYSTORE_PATH") ?: (project.findProperty("RELEASE_KEYSTORE_PATH") ?: "release.keystore")
-            def ksPassword = System.getenv("KEYSTORE_PASSWORD") ?: (project.findProperty("RELEASE_KEYSTORE_PASSWORD") ?: "")
-            def ksKeyAlias = System.getenv("KEY_ALIAS") ?: (project.findProperty("RELEASE_KEY_ALIAS") ?: "")
-            def ksKeyPassword = System.getenv("KEY_PASSWORD") ?: (project.findProperty("RELEASE_KEY_PASSWORD") ?: "")
+            def ksPath = System.getenv("KEYSTORE_PATH") ?: (localProps['RELEASE_KEYSTORE_PATH'] ?: (project.findProperty("RELEASE_KEYSTORE_PATH") ?: "release.keystore"))
+            def ksPassword = System.getenv("KEYSTORE_PASSWORD") ?: (localProps['RELEASE_KEYSTORE_PASSWORD'] ?: (project.findProperty("RELEASE_KEYSTORE_PASSWORD") ?: ""))
+            def ksKeyAlias = System.getenv("KEY_ALIAS") ?: (localProps['RELEASE_KEY_ALIAS'] ?: (project.findProperty("RELEASE_KEY_ALIAS") ?: ""))
+            def ksKeyPassword = System.getenv("KEY_PASSWORD") ?: (localProps['RELEASE_KEY_PASSWORD'] ?: (project.findProperty("RELEASE_KEY_PASSWORD") ?: ""))
 
             if (ksPassword && ksKeyAlias && ksKeyPassword) {
                 storeFile file(ksPath)
@@ -63,7 +63,7 @@ android {
 
     buildTypes {
         release {
-            if (System.getenv("KEYSTORE_PASSWORD") != null || project.hasProperty("RELEASE_KEYSTORE_PASSWORD")) {
+            if (System.getenv("KEYSTORE_PASSWORD") != null || project.hasProperty("RELEASE_KEYSTORE_PASSWORD") || localProps['RELEASE_KEYSTORE_PASSWORD'] != null) {
                 signingConfig signingConfigs.release
             }
             minifyEnabled true

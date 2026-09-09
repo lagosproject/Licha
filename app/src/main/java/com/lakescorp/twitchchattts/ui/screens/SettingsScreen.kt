@@ -1,5 +1,10 @@
 package com.lakescorp.twitchchattts.ui.screens
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -8,8 +13,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
@@ -17,11 +23,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.lakescorp.twitchchattts.BuildConfig
 import com.lakescorp.twitchchattts.ChatViewModel
 import com.lakescorp.twitchchattts.R
 import com.lakescorp.twitchchattts.ui.theme.*
@@ -34,6 +42,11 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    val context = LocalContext.current
+    val powerManager = remember { context.getSystemService(Context.POWER_SERVICE) as? PowerManager }
+    var isIgnoringBatteryOptimizations by remember {
+        mutableStateOf(powerManager?.isIgnoringBatteryOptimizations(context.packageName) ?: false)
+    }
 
     // State Collection
     val channel by viewModel.channel.collectAsState()
@@ -41,6 +54,7 @@ fun SettingsScreen(
     val ignoreSubs by viewModel.ignoreSubs.collectAsState()
     val ignoreMods by viewModel.ignoreMods.collectAsState()
     val ignoredUsers by viewModel.ignoredUsers.collectAsState()
+    val keepScreenOn by viewModel.keepScreenOn.collectAsState()
 
     val pitch by viewModel.pitch.collectAsState()
     val rate by viewModel.rate.collectAsState()
@@ -475,6 +489,178 @@ fun SettingsScreen(
                                 modifier = Modifier.padding(vertical = 4.dp)
                             )
                         }
+                    }
+                }
+            }
+
+            // SECTION 4: BACKGROUND PLAYBACK & DISPLAY
+            Text(
+                text = stringResource(id = R.string.background_service_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = TwitchPurpleLight,
+                fontWeight = FontWeight.Bold
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // Keep Screen On
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(id = R.string.keep_screen_on),
+                                fontWeight = FontWeight.Medium,
+                                color = TextLight
+                            )
+                            Text(
+                                text = stringResource(id = R.string.keep_screen_on_desc),
+                                fontSize = 12.sp,
+                                color = TextMuted
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Switch(
+                            checked = keepScreenOn,
+                            onCheckedChange = { viewModel.setKeepScreenOn(it) },
+                            colors = SwitchDefaults.colors(checkedThumbColor = TwitchPurple)
+                        )
+                    }
+
+                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 4.dp))
+
+                    // Battery Optimization setting
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                try {
+                                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                        data = Uri.parse("package:${context.packageName}")
+                                    }
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    try {
+                                        val fallback = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                        context.startActivity(fallback)
+                                    } catch (_: Exception) {}
+                                }
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(id = R.string.battery_optimization),
+                                fontWeight = FontWeight.Medium,
+                                color = TextLight
+                            )
+                            Text(
+                                text = stringResource(id = R.string.battery_optimization_desc),
+                                fontSize = 12.sp,
+                                color = TextMuted
+                            )
+                            Text(
+                                text = if (isIgnoringBatteryOptimizations) {
+                                    stringResource(id = R.string.battery_unrestricted)
+                                } else {
+                                    stringResource(id = R.string.battery_optimized)
+                                },
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isIgnoringBatteryOptimizations) AlertGreen else AlertOrange,
+                                modifier = Modifier.padding(top = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                            contentDescription = "Configure Battery Optimization",
+                            tint = TextMuted,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            // SECTION 5: ABOUT & COMMUNITY (GITHUB REPOSITORY)
+            Text(
+                text = stringResource(id = R.string.about_section),
+                style = MaterialTheme.typography.titleMedium,
+                color = TwitchPurpleLight,
+                fontWeight = FontWeight.Bold
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    // App Version info
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(id = R.string.app_name),
+                            fontWeight = FontWeight.Bold,
+                            color = TextLight,
+                            fontSize = 15.sp
+                        )
+                        Text(
+                            text = "${stringResource(id = R.string.app_version)} ${BuildConfig.VERSION_NAME}",
+                            color = TextMuted,
+                            fontSize = 13.sp
+                        )
+                    }
+
+                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 10.dp))
+
+                    // GitHub Link Row
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val intent = Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse("https://github.com/lagosproject/Licha")
+                                )
+                                context.startActivity(intent)
+                            }
+                            .padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(id = R.string.github_repository),
+                                fontWeight = FontWeight.Medium,
+                                color = TextLight
+                            )
+                            Text(
+                                text = "https://github.com/lagosproject/Licha",
+                                fontSize = 12.sp,
+                                color = TwitchPurpleLight
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                            contentDescription = "Open GitHub",
+                            tint = TwitchPurpleLight,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 }
             }

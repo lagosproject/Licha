@@ -112,11 +112,12 @@ class SettingsRepositoryImpl @Inject constructor(
         val IGNORE_NORMAL = booleanPreferencesKey("ignoreNormalUsers")
         val IGNORE_SUBS = booleanPreferencesKey("ignoreSubscribers")
         val IGNORE_MODS = booleanPreferencesKey("ignoreModerators")
+        val KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
     }
 
     // ── Flows (safe reads — emit defaults on IO errors) ────────────────────────
 
-    private fun <T> DataStore<Preferences>.safeFlow(default: T, extract: (Preferences) -> T): Flow<T> =
+    private fun <T> DataStore<Preferences>.safeFlow(extract: (Preferences) -> T): Flow<T> =
         data.catch { cause ->
             if (cause is IOException) {
                 Log.e("SettingsRepository", "DataStore read error", cause)
@@ -124,17 +125,18 @@ class SettingsRepositoryImpl @Inject constructor(
             } else throw cause
         }.map { extract(it) }
 
-    override val channel: Flow<String> = dataStore.safeFlow("") { it[Keys.CHANNEL] ?: "" }
-    override val isMuted: Flow<Boolean> = dataStore.safeFlow(false) { it[Keys.IS_MUTED] ?: false }
-    override val pitch: Flow<Float> = dataStore.safeFlow(1.0f) { it[Keys.PITCH] ?: 1.0f }
-    override val rate: Flow<Float> = dataStore.safeFlow(1.0f) { it[Keys.RATE] ?: 1.0f }
-    override val volume: Flow<Float> = dataStore.safeFlow(1.0f) { it[Keys.VOLUME] ?: 1.0f }
-    override val selectedVoice: Flow<String> = dataStore.safeFlow("") { it[Keys.SELECTED_VOICE] ?: "" }
+    override val channel: Flow<String> = dataStore.safeFlow { it[Keys.CHANNEL] ?: "" }
+    override val isMuted: Flow<Boolean> = dataStore.safeFlow { it[Keys.IS_MUTED] ?: false }
+    override val pitch: Flow<Float> = dataStore.safeFlow { it[Keys.PITCH] ?: 1.0f }
+    override val rate: Flow<Float> = dataStore.safeFlow { it[Keys.RATE] ?: 1.0f }
+    override val volume: Flow<Float> = dataStore.safeFlow { it[Keys.VOLUME] ?: 1.0f }
+    override val selectedVoice: Flow<String> = dataStore.safeFlow { it[Keys.SELECTED_VOICE] ?: "" }
     override val ignoredUsers: Flow<Set<String>> =
-        dataStore.safeFlow(setOf("nightbot")) { it[Keys.IGNORED_USERS] ?: setOf("nightbot") }
-    override val ignoreNormal: Flow<Boolean> = dataStore.safeFlow(false) { it[Keys.IGNORE_NORMAL] ?: false }
-    override val ignoreSubs: Flow<Boolean> = dataStore.safeFlow(false) { it[Keys.IGNORE_SUBS] ?: false }
-    override val ignoreMods: Flow<Boolean> = dataStore.safeFlow(false) { it[Keys.IGNORE_MODS] ?: false }
+        dataStore.safeFlow { it[Keys.IGNORED_USERS] ?: setOf("nightbot") }
+    override val ignoreNormal: Flow<Boolean> = dataStore.safeFlow { it[Keys.IGNORE_NORMAL] ?: false }
+    override val ignoreSubs: Flow<Boolean> = dataStore.safeFlow { it[Keys.IGNORE_SUBS] ?: false }
+    override val ignoreMods: Flow<Boolean> = dataStore.safeFlow { it[Keys.IGNORE_MODS] ?: false }
+    override val keepScreenOn: Flow<Boolean> = dataStore.safeFlow { it[Keys.KEEP_SCREEN_ON] ?: false }
 
     // ── Suspend writes ─────────────────────────────────────────────────────────
 
@@ -189,5 +191,9 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setIgnoreMods(ignore: Boolean) {
         dataStore.edit { it[Keys.IGNORE_MODS] = ignore }
+    }
+
+    override suspend fun setKeepScreenOn(keep: Boolean) {
+        dataStore.edit { it[Keys.KEEP_SCREEN_ON] = keep }
     }
 }

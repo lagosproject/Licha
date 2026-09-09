@@ -1,9 +1,14 @@
 package com.lakescorp.twitchchattts
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -34,6 +39,32 @@ class MainActivity : ComponentActivity() {
             TwitchChatTTSTheme {
                 var currentScreen by remember { mutableStateOf(Screen.Login) }
                 val loginState by viewModel.loginState.collectAsState()
+                val keepScreenOn by viewModel.keepScreenOn.collectAsState()
+
+                // Keep screen on when requested by user in settings
+                DisposableEffect(keepScreenOn) {
+                    if (keepScreenOn) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                    onDispose {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
+
+                // Request POST_NOTIFICATIONS on Android 13+ (API 33+) for foreground service notifications
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    val permissionLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestPermission()
+                    ) { /* permission result */ }
+
+                    LaunchedEffect(Unit) {
+                        if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                }
 
                 LaunchedEffect(loginState) {
                     when (loginState) {

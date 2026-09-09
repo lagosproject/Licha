@@ -1,17 +1,15 @@
 package com.lakescorp.twitchchattts
 
 import android.content.Context
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lakescorp.twitchchattts.data.TwitchIrcClient
 import com.lakescorp.twitchchattts.data.auth.AuthManager
 import com.lakescorp.twitchchattts.data.repository.SettingsRepository
-import com.lakescorp.twitchchattts.domain.ChatFilterService
+import com.lakescorp.twitchchattts.domain.ChatSessionManager
 import com.lakescorp.twitchchattts.domain.tts.TtsManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,24 +22,26 @@ import javax.inject.Inject
 /**
  * Thin coordinator ViewModel.
  *
- * Responsibilities: IRC connection lifecycle, chat history, search, and
- * delegating TTS, auth, and filter decisions to dedicated domain services.
- *
- * All heavy logic now lives in:
- *  - [AuthManager]       — OAuth token, login state, deep-link parsing
- *  - [TtsManager]        — TTS engine lifecycle, voice selection, speech params
- *  - [ChatFilterService] — shouldSpeak() predicate
- *  - [SettingsRepository] — DataStore persistence
+ * Responsibilities: Chat UI state, settings manipulation, and auth coordination.
+ * The active background session (IRC WebSocket, TTS speaking, Foreground Service)
+ * is managed by [ChatSessionManager] so chat listening continues uninterrupted
+ * when the screen turns off or the app is in the background.
  */
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val authManager: AuthManager,
     private val ttsManager: TtsManager,
-    private val ircClient: TwitchIrcClient,
-    private val settingsRepository: SettingsRepository,
-    private val filterService: ChatFilterService
-) : ViewModel(), TwitchIrcClient.IrcListener {
+    private val chatSessionManager: ChatSessionManager,
+    private val settingsRepository: SettingsRepository
+) : ViewModel() {
+
+    sealed interface ConnectionState {
+        object Disconnected : ConnectionState
+        object Connecting : ConnectionState
+        object Connected : ConnectionState
+        data class Error(val message: String) : ConnectionState
+    }
 
     // ── Auth state (delegated to AuthManager) ─────────────────────────────────
     val loginState: StateFlow<AuthManager.LoginState> = authManager.loginState
@@ -53,14 +53,9 @@ class ChatViewModel @Inject constructor(
     private val _isStorageEncrypted = MutableStateFlow(true)
     val isStorageEncrypted: StateFlow<Boolean> = _isStorageEncrypted.asStateFlow()
 
-    // ── Connection state ──────────────────────────────────────────────────────
-    private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
-    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
-
-    // ── Chat history ──────────────────────────────────────────────────────────
-    private val messageDeque = ArrayDeque<TwitchIrcClient.TwitchChatMessage>(100)
-    private val _chatHistory = MutableStateFlow<List<TwitchIrcClient.TwitchChatMessage>>(emptyList())
-    val chatHistory: StateFlow<List<TwitchIrcClient.TwitchChatMessage>> = _chatHistory.asStateFlow()
+    // ── Connection state & Chat history (delegated to ChatSessionManager) ─────
+    val connectionState: StateFlow<ConnectionState> = chatSessionManager.connectionState
+    val chatHistory: StateFlow<List<TwitchIrcClient.TwitchChatMessage>> = chatSessionManager.chatHistory
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -89,15 +84,8 @@ class ChatViewModel @Inject constructor(
         settingsRepository.ignoreSubs.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val ignoreMods: StateFlow<Boolean> =
         settingsRepository.ignoreMods.stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
-    private var lastSpeaker = ""
-
-    sealed interface ConnectionState {
-        object Disconnected : ConnectionState
-        object Connecting : ConnectionState
-        object Connected : ConnectionState
-        data class Error(val message: String) : ConnectionState
-    }
+    val keepScreenOn: StateFlow<Boolean> =
+        settingsRepository.keepScreenOn.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     init {
         viewModelScope.launch {
@@ -149,18 +137,15 @@ class ChatViewModel @Inject constructor(
         if (channel.value.isEmpty()) {
             settingsRepository.setChannel(currentChannel)
         }
-        connectToChat(username, authManager.oauthToken.value, currentChannel)
+        if (connectionState.value is ConnectionState.Disconnected) {
+            connectToChat(username, authManager.oauthToken.value, currentChannel)
+        }
     }
 
     // ── IRC Connection ────────────────────────────────────────────────────────
 
     fun connectToChat(username: String, token: String, targetChannel: String) {
-        _connectionState.value = ConnectionState.Connecting
-        ircClient.disconnect()
-        _chatHistory.value = emptyList()
-        messageDeque.clear()
-        lastSpeaker = ""
-        ircClient.connect(username, token, targetChannel, this)
+        chatSessionManager.connectToChat(username, token, targetChannel)
     }
 
     fun switchChannel(newChannel: String) {
@@ -176,13 +161,12 @@ class ChatViewModel @Inject constructor(
     }
 
     fun logout() {
-        ircClient.disconnect()
+        chatSessionManager.disconnect()
         authManager.logout()
-        _connectionState.value = ConnectionState.Disconnected
-        _chatHistory.value = emptyList()
-        messageDeque.clear()
-        lastSpeaker = ""
-        ttsManager.stop()
+    }
+
+    fun setKeepScreenOn(value: Boolean) {
+        viewModelScope.launch { settingsRepository.setKeepScreenOn(value) }
     }
 
     // ── Search ────────────────────────────────────────────────────────────────
@@ -244,59 +228,11 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.removeIgnoredUser(user.trim().lowercase()) }
     }
 
-    // ── IRC Listener callbacks ────────────────────────────────────────────────
-
-    override fun onConnected() {
-        viewModelScope.launch(Dispatchers.Main.immediate) {
-            _connectionState.value = ConnectionState.Connected
-        }
-    }
-
-    override fun onDisconnected(reason: String) {
-        viewModelScope.launch(Dispatchers.Main.immediate) {
-            _connectionState.value = ConnectionState.Disconnected
-        }
-    }
-
-    override fun onMessageReceived(message: TwitchIrcClient.TwitchChatMessage) {
-        viewModelScope.launch {
-            messageDeque.addLast(message)
-            if (messageDeque.size > 100) messageDeque.removeFirst()
-            _chatHistory.value = messageDeque.toList()
-
-            if (isMuted.value) return@launch
-            if (!filterService.shouldSpeak(
-                    message = message,
-                    ignoredUsers = ignoredUsers.value,
-                    ignoreMods = ignoreMods.value,
-                    ignoreSubs = ignoreSubs.value,
-                    ignoreNormal = ignoreNormal.value
-                )
-            ) return@launch
-
-            val saidWord = context.getString(R.string.said)
-            val textToSpeak = if (message.displayName.equals(lastSpeaker, ignoreCase = true)) {
-                message.cleanSpeechText
-            } else {
-                "${message.displayName.replace("_", " ")} $saidWord ${message.cleanSpeechText}"
-            }
-
-            if (message.cleanSpeechText.isNotEmpty()) {
-                lastSpeaker = message.displayName
-                ttsManager.speak(textToSpeak)
-            }
-        }
-    }
-
-    override fun onError(error: String) {
-        viewModelScope.launch(Dispatchers.Main.immediate) {
-            _connectionState.value = ConnectionState.Error(error)
-        }
-    }
-
     override fun onCleared() {
         super.onCleared()
-        ircClient.disconnect()
-        ttsManager.shutdown()
+        // If not actively listening in the background, clean up TTS resources
+        if (connectionState.value is ConnectionState.Disconnected) {
+            ttsManager.shutdown()
+        }
     }
 }

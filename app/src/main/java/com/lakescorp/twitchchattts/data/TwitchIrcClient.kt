@@ -26,6 +26,7 @@ class TwitchIrcClient @Inject constructor(
 
     private val client = sharedClient.newBuilder()
         .readTimeout(0, TimeUnit.MILLISECONDS)
+        .pingInterval(30, TimeUnit.SECONDS)
         .build()
     // These are touched from OkHttp's dispatcher threads and from connect()/disconnect();
     // @Volatile guarantees cross-thread visibility.

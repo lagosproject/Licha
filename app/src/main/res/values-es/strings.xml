@@ -52,4 +52,26 @@
     <string name="offline_status">Desconectado</string>
     <string name="error_status">Error de conexión</string>
     <string name="security_warning">Advertencia de seguridad: El almacenamiento seguro no está disponible en este dispositivo. Su token OAuth se guardará en formato de texto plano.</string>
+
+    <!-- Background Playback & Settings -->
+    <string name="background_service_title">Reproducción en Segundo Plano</string>
+    <string name="keep_screen_on">Mantener Pantalla Encendida</string>
+    <string name="keep_screen_on_desc">Evitar que la pantalla se apague mientras se visualiza el chat</string>
+    <string name="battery_optimization">Optimización de Batería</string>
+    <string name="battery_optimization_desc">Asegurar que la lectura en segundo plano no sea cerrada por el ahorro de batería</string>
+    <string name="battery_unrestricted">Sin restricciones (Recomendado)</string>
+    <string name="battery_optimized">Optimizada (Toca para configurar)</string>
+
+    <!-- About & Project -->
+    <string name="about_section">Acerca de y Comunidad</string>
+    <string name="github_repository">Repositorio en GitHub</string>
+    <string name="github_repository_desc">Ver código fuente, reportar problemas y dar estrella en GitHub</string>
+    <string name="app_version">Versión</string>
+
+    <!-- Foreground Service -->
+    <string name="service_notification_channel_name">Servicio de Lectura de Chat</string>
+    <string name="service_notification_channel_desc">Mantiene la conexión TTS del chat de Twitch activa en segundo plano</string>
+    <string name="service_notification_title">Licha - Twitch Chat TTS</string>
+    <string name="service_notification_connected">Escuchando el chat en #%1$s</string>
+    <string name="service_action_stop">Detener</string>
 </resources>

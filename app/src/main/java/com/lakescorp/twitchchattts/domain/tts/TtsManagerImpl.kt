@@ -1,6 +1,7 @@
 package com.lakescorp.twitchchattts.domain.tts
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
@@ -48,6 +49,11 @@ class TtsManagerImpl @Inject constructor(
         tts = TextToSpeech(context) { status ->
             if (status != TextToSpeech.ERROR) {
                 tts?.language = Locale.getDefault()
+                val audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_MEDIA)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                tts?.setAudioAttributes(audioAttributes)
                 // Apply any parameters that were set before the engine was ready
                 tts?.setPitch(currentPitch)
                 tts?.setSpeechRate(currentRate)
