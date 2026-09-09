@@ -1,8 +1,10 @@
 package com.lakescorp.twitchchattts.ui.screens
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.foundation.background
@@ -71,6 +73,7 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(id = R.string.settings), fontWeight = FontWeight.Bold, color = TextLight) },
@@ -632,11 +635,17 @@ fun SettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                val intent = Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse("https://github.com/lagosproject/Licha")
-                                )
-                                context.startActivity(intent)
+                                try {
+                                    val intent = Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("https://github.com/lagosproject/Licha")
+                                    )
+                                    context.startActivity(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    Toast.makeText(context, R.string.no_browser_found, Toast.LENGTH_LONG).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, e.localizedMessage ?: "Error opening link", Toast.LENGTH_LONG).show()
+                                }
                             }
                             .padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,

@@ -17,6 +17,7 @@
     <string name="advanced_settings">Advanced Settings</string>
     <string name="hide_id">Hide ID</string>
     <string name="use_custom_id">Use Custom ID</string>
+    <string name="no_browser_found">No web browser found to open the link. Please install or enable a web browser.</string>
 
     <!-- Settings Screen -->
     <string name="settings">Settings</string>

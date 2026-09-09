@@ -17,6 +17,7 @@
     <string name="advanced_settings">Ajustes Avanzados</string>
     <string name="hide_id">Ocultar ID</string>
     <string name="use_custom_id">Usar ID Personalizado</string>
+    <string name="no_browser_found">No se encontró ningún navegador para abrir el enlace. Instala o habilita un navegador web.</string>
 
     <!-- Settings Screen -->
     <string name="settings">Ajustes</string>

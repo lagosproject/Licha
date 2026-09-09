@@ -1,7 +1,9 @@
 package com.lakescorp.twitchchattts.ui.screens
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -41,6 +43,7 @@ fun LoginScreen(
     val scrollState = rememberScrollState()
 
     val loginState by viewModel.loginState.collectAsState()
+    var launchError by remember { mutableStateOf<String?>(null) }
 
     val appIcon = remember(context) {
         try {
@@ -53,7 +56,6 @@ fun LoginScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .statusBarsPadding()
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
@@ -68,6 +70,7 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .safeDrawingPadding()
                 .verticalScroll(scrollState)
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -125,10 +128,21 @@ fun LoginScreen(
 
                     Button(
                         onClick = {
+                            launchError = null
                             val authUrl = viewModel.getAuthorizeUrl()
                             if (authUrl != null) {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(authUrl))
-                                context.startActivity(intent)
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(authUrl))
+                                    context.startActivity(intent)
+                                } catch (e: ActivityNotFoundException) {
+                                    val error = context.getString(R.string.no_browser_found)
+                                    launchError = error
+                                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                } catch (e: Exception) {
+                                    val error = e.localizedMessage ?: "Error opening browser"
+                                    launchError = error
+                                    Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                                }
                             }
                         },
                         enabled = loginState !is AuthManager.LoginState.Loading,
@@ -154,12 +168,12 @@ fun LoginScreen(
                     )
 
                     // Error States
+                    val errorMsg = (loginState as? AuthManager.LoginState.Error)?.message ?: launchError
                     AnimatedVisibility(
-                        visible = loginState is AuthManager.LoginState.Error,
+                        visible = errorMsg != null,
                         enter = fadeIn(),
                         exit = fadeOut()
                     ) {
-                        val errorMsg = (loginState as? AuthManager.LoginState.Error)?.message ?: ""
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -176,7 +190,7 @@ fun LoginScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = errorMsg,
+                                text = errorMsg.orEmpty(),
                                 color = AlertRed,
                                 fontSize = 12.sp,
                                 textAlign = TextAlign.Start,
