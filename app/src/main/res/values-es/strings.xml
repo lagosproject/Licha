@@ -56,12 +56,19 @@
 
     <!-- Background Playback & Settings -->
     <string name="background_service_title">Reproducción en Segundo Plano</string>
+    <string name="stop_on_app_close">Detener al cerrar la aplicación</string>
+    <string name="stop_on_app_close_desc">Detener la escucha y el servicio en segundo plano al deslizar la app de las recientes</string>
     <string name="keep_screen_on">Mantener Pantalla Encendida</string>
     <string name="keep_screen_on_desc">Evitar que la pantalla se apague mientras se visualiza el chat</string>
     <string name="battery_optimization">Optimización de Batería</string>
     <string name="battery_optimization_desc">Asegurar que la lectura en segundo plano no sea cerrada por el ahorro de batería</string>
     <string name="battery_unrestricted">Sin restricciones (Recomendado)</string>
     <string name="battery_optimized">Optimizada (Toca para configurar)</string>
+    <string name="connect_btn">Conectar</string>
+    <string name="disconnect_btn">Desconectar</string>
+    <string name="disconnect_desc">Detener la escucha sin cerrar sesión</string>
+    <string name="start_listening">Comenzar a Escuchar</string>
+    <string name="stop_listening">Detener Escucha</string>
 
     <!-- About & Project -->
     <string name="about_section">Acerca de y Comunidad</string>
@@ -74,5 +81,48 @@
     <string name="service_notification_channel_desc">Mantiene la conexión TTS del chat de Twitch activa en segundo plano</string>
     <string name="service_notification_title">Licha - Twitch Chat TTS</string>
     <string name="service_notification_connected">Escuchando el chat en #%1$s</string>
+    <string name="service_notification_paused">Chat pausado (#%1$s)</string>
+    <string name="service_action_play">Reanudar</string>
+    <string name="service_action_pause">Pausar</string>
     <string name="service_action_stop">Detener</string>
+    <string name="service_action_close">Cerrar</string>
+
+    <!-- Modernized UI, Hero Banner & Audio Controls -->
+    <string name="speed_format">%1$.1fx</string>
+    <string name="pitch_format">%1$.1fx</string>
+    <string name="volume_format">%1$d%%</string>
+    <string name="reset_audio">Restablecer</string>
+    <string name="banner_listening">Escuchando el chat</string>
+    <string name="banner_paused">Lectura en pausa</string>
+    <string name="resume_btn">Reanudar</string>
+    <string name="pause_btn">Pausar</string>
+    <string name="retry_btn">Reintentar</string>
+    <string name="current_channel_status">Canal actual: #%1$s (%2$s)</string>
+    <string name="session_management_title">Gestión de Sesión</string>
+    <string name="pause_reading_btn">Pausar / Desconectar Lectura</string>
+    <string name="pause_reading_desc">Detiene la voz temporalmente sin cerrar la sesión de Twitch</string>
+    <string name="logout_desc">Elimina las credenciales guardadas y desconecta por completo</string>
+    <string name="badge_broadcaster">Emisor</string>
+    <string name="badge_moderator">Mod</string>
+    <string name="badge_subscriber">Sub</string>
+
+    <!-- TalkBack & Accessibility Content Descriptions -->
+    <string name="cd_quick_audio_tuning">Ajustes rápidos de voz</string>
+    <string name="cd_unmute_speech">Activar sonido</string>
+    <string name="cd_mute_speech">Silenciar sonido</string>
+    <string name="cd_settings">Ajustes</string>
+    <string name="cd_search">Buscar</string>
+    <string name="cd_clear_search">Borrar búsqueda</string>
+    <string name="cd_back">Atrás</string>
+    <string name="cd_channel_icon">Icono de canal</string>
+    <string name="cd_add_user">Añadir usuario</string>
+    <string name="cd_remove_user">Eliminar usuario</string>
+    <string name="cd_battery_optimization">Configurar optimización de batería</string>
+    <string name="cd_open_github">Abrir repositorio de GitHub</string>
+    <string name="cd_disconnect">Desconectar</string>
+    <string name="cd_logout">Cerrar sesión</string>
+    <string name="cd_play_preview">Reproducir prueba de voz</string>
+    <string name="cd_error">Error</string>
+    <string name="cd_warning">Advertencia</string>
+    <string name="error_opening_browser">Error al abrir el navegador web</string>
 </resources>

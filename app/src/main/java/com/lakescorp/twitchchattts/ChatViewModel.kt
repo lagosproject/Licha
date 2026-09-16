@@ -86,6 +86,8 @@ class ChatViewModel @Inject constructor(
         settingsRepository.ignoreMods.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val keepScreenOn: StateFlow<Boolean> =
         settingsRepository.keepScreenOn.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val stopOnAppClose: StateFlow<Boolean> =
+        settingsRepository.stopOnAppClose.stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     init {
         viewModelScope.launch {
@@ -160,13 +162,30 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun disconnect() {
+        chatSessionManager.disconnect()
+    }
+
+    fun reconnect() {
+        if (chatSessionManager.canReconnect) {
+            chatSessionManager.reconnect()
+        } else {
+            viewModelScope.launch { triggerLogin() }
+        }
+    }
+
     fun logout() {
         chatSessionManager.disconnect()
+        chatSessionManager.clearHistory()
         authManager.logout()
     }
 
     fun setKeepScreenOn(value: Boolean) {
         viewModelScope.launch { settingsRepository.setKeepScreenOn(value) }
+    }
+
+    fun setStopOnAppClose(value: Boolean) {
+        viewModelScope.launch { settingsRepository.setStopOnAppClose(value) }
     }
 
     // ── Search ────────────────────────────────────────────────────────────────

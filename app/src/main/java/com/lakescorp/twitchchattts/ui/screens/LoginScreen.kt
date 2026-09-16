@@ -14,7 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -139,7 +139,7 @@ fun LoginScreen(
                                     launchError = error
                                     Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                                 } catch (e: Exception) {
-                                    val error = e.localizedMessage ?: "Error opening browser"
+                                    val error = e.localizedMessage ?: context.getString(R.string.error_opening_browser)
                                     launchError = error
                                     Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                                 }
@@ -183,8 +183,8 @@ fun LoginScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "Error",
+                                imageVector = Icons.Rounded.Info,
+                                contentDescription = stringResource(id = R.string.cd_error),
                                 tint = AlertRed,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -211,8 +211,8 @@ fun LoginScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "Warning",
+                                imageVector = Icons.Rounded.Info,
+                                contentDescription = stringResource(id = R.string.cd_warning),
                                 tint = AlertOrange,
                                 modifier = Modifier.size(18.dp)
                             )

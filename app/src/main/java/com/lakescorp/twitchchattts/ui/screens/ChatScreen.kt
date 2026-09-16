@@ -10,9 +10,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,51 +82,37 @@ fun ChatScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        StatusIndicator(connectionState)
-
-                        Column {
-                            Text(
-                                text = "twitch.tv/$channel",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = TextLight,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = when (connectionState) {
-                                    is ChatViewModel.ConnectionState.Connected -> stringResource(id = R.string.connected_status)
-                                    is ChatViewModel.ConnectionState.Connecting -> stringResource(id = R.string.connecting_status)
-                                    is ChatViewModel.ConnectionState.Disconnected -> stringResource(id = R.string.offline_status)
-                                    is ChatViewModel.ConnectionState.Error -> stringResource(id = R.string.error_status)
-                                },
-                                fontSize = 11.sp,
-                                color = TextMuted
-                            )
-                        }
+                        Text(
+                            text = "#$channel",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextLight,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { showQuickControls = !showQuickControls }) {
                         Icon(
-                            imageVector = if (showQuickControls) Icons.Default.KeyboardArrowUp else Icons.Default.Tune,
-                            contentDescription = "Quick Audio Tuning",
+                            imageVector = if (showQuickControls) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.Tune,
+                            contentDescription = stringResource(id = R.string.cd_quick_audio_tuning),
                             tint = if (showQuickControls) TwitchPurpleLight else TextLight
                         )
                     }
 
                     IconButton(onClick = { viewModel.toggleMute() }) {
                         Icon(
-                            imageVector = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                            contentDescription = if (isMuted) "Unmute Speech" else "Mute Speech",
+                            imageVector = if (isMuted) Icons.AutoMirrored.Rounded.VolumeOff else Icons.AutoMirrored.Rounded.VolumeUp,
+                            contentDescription = stringResource(id = if (isMuted) R.string.cd_unmute_speech else R.string.cd_mute_speech),
                             tint = if (isMuted) AlertRed else AlertGreen
                         )
                     }
 
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
-                            contentDescription = "Settings",
+                            imageVector = Icons.Rounded.Settings,
+                            contentDescription = stringResource(id = R.string.cd_settings),
                             tint = TextLight
                         )
                     }
@@ -143,6 +130,16 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Hero Connection & Play/Pause Banner
+            HeroConnectionBanner(
+                connectionState = connectionState,
+                onPause = { viewModel.disconnect() },
+                onResume = { viewModel.reconnect() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+            )
+
             // Search Bar
             OutlinedTextField(
                 value = searchQuery,
@@ -151,8 +148,8 @@ fun ChatScreen(
                 singleLine = true,
                 leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = stringResource(id = R.string.cd_search),
                         tint = TextMuted
                     )
                 },
@@ -160,8 +157,8 @@ fun ChatScreen(
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.setSearchQuery("") }) {
                             Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = "Clear search",
+                                imageVector = Icons.Rounded.Clear,
+                                contentDescription = stringResource(id = R.string.cd_clear_search),
                                 tint = TextMuted
                             )
                         }
@@ -201,11 +198,42 @@ fun ChatScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(stringResource(id = R.string.quick_tts_settings), fontWeight = FontWeight.Bold, color = TwitchPurpleLight, fontSize = 13.sp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(id = R.string.quick_tts_settings),
+                                fontWeight = FontWeight.Bold,
+                                color = TwitchPurpleLight,
+                                fontSize = 13.sp
+                            )
+                            TextButton(
+                                onClick = {
+                                    viewModel.setPitch(1.0f)
+                                    viewModel.setRate(1.0f)
+                                },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp),
+                                modifier = Modifier.height(28.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(id = R.string.reset_audio),
+                                    color = TwitchPurpleLight,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
 
                         // Pitch
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(id = R.string.speech_pitch), modifier = Modifier.width(100.dp), color = TextLight, fontSize = 12.sp)
+                            Text(
+                                text = stringResource(id = R.string.speech_pitch),
+                                modifier = Modifier.width(90.dp),
+                                color = TextLight,
+                                fontSize = 12.sp
+                            )
                             Slider(
                                 value = pitch,
                                 onValueChange = { viewModel.setPitch(it) },
@@ -213,11 +241,24 @@ fun ChatScreen(
                                 modifier = Modifier.weight(1f),
                                 colors = SliderDefaults.colors(activeTrackColor = TwitchPurple, thumbColor = TwitchPurple)
                             )
+                            Text(
+                                text = stringResource(id = R.string.pitch_format, pitch),
+                                color = TwitchPurpleLight,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(44.dp),
+                                textAlign = TextAlign.End
+                            )
                         }
 
                         // Speed
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(id = R.string.speech_rate), modifier = Modifier.width(100.dp), color = TextLight, fontSize = 12.sp)
+                            Text(
+                                text = stringResource(id = R.string.speech_rate),
+                                modifier = Modifier.width(90.dp),
+                                color = TextLight,
+                                fontSize = 12.sp
+                            )
                             Slider(
                                 value = rate,
                                 onValueChange = { viewModel.setRate(it) },
@@ -225,17 +266,38 @@ fun ChatScreen(
                                 modifier = Modifier.weight(1f),
                                 colors = SliderDefaults.colors(activeTrackColor = TwitchPurple, thumbColor = TwitchPurple)
                             )
+                            Text(
+                                text = stringResource(id = R.string.speed_format, rate),
+                                color = TwitchPurpleLight,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(44.dp),
+                                textAlign = TextAlign.End
+                            )
                         }
 
                         // Volume
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(id = R.string.tts_volume), modifier = Modifier.width(100.dp), color = TextLight, fontSize = 12.sp)
+                            Text(
+                                text = stringResource(id = R.string.tts_volume),
+                                modifier = Modifier.width(90.dp),
+                                color = TextLight,
+                                fontSize = 12.sp
+                            )
                             Slider(
                                 value = volume,
                                 onValueChange = { viewModel.setVolume(it) },
                                 valueRange = 0.0f..1.0f,
                                 modifier = Modifier.weight(1f),
                                 colors = SliderDefaults.colors(activeTrackColor = TwitchPurple, thumbColor = TwitchPurple)
+                            )
+                            Text(
+                                text = stringResource(id = R.string.volume_format, (volume * 100).toInt()),
+                                color = TwitchPurpleLight,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.width(44.dp),
+                                textAlign = TextAlign.End
                             )
                         }
                     }
@@ -265,12 +327,160 @@ fun ChatScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = if (searchQuery.isNotEmpty()) stringResource(id = R.string.no_matching_results) else stringResource(id = R.string.chat_logs_appear),
-                            color = TextMuted,
-                            fontSize = 14.sp
-                        )
+                        if (searchQuery.isNotEmpty()) {
+                            Text(
+                                text = stringResource(id = R.string.no_matching_results),
+                                color = TextMuted,
+                                fontSize = 14.sp
+                            )
+                        } else if (connectionState is ChatViewModel.ConnectionState.Disconnected ||
+                            connectionState is ChatViewModel.ConnectionState.Error
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Text(
+                                    text = if (connectionState is ChatViewModel.ConnectionState.Error) {
+                                        stringResource(id = R.string.error_status)
+                                    } else {
+                                        stringResource(id = R.string.offline_status)
+                                    },
+                                    color = TextMuted,
+                                    fontSize = 14.sp
+                                )
+                                Button(
+                                    onClick = { viewModel.reconnect() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = TwitchPurple),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Icon(imageVector = Icons.Rounded.PlayArrow, contentDescription = null)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(stringResource(id = R.string.start_listening), fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        } else {
+                            Text(
+                                text = stringResource(id = R.string.chat_logs_appear),
+                                color = TextMuted,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HeroConnectionBanner(
+    connectionState: ChatViewModel.ConnectionState,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isConnected = connectionState is ChatViewModel.ConnectionState.Connected
+    val isConnecting = connectionState is ChatViewModel.ConnectionState.Connecting
+    val isError = connectionState is ChatViewModel.ConnectionState.Error
+
+    val cardBorder = when {
+        isConnected -> AlertGreen.copy(alpha = 0.35f)
+        isConnecting -> TwitchPurple.copy(alpha = 0.35f)
+        isError -> AlertRed.copy(alpha = 0.35f)
+        else -> BorderColor
+    }
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = DarkSurface,
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = androidx.compose.ui.graphics.SolidColor(cardBorder)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                StatusIndicator(connectionState)
+                val errorFallback = stringResource(id = R.string.error_status)
+                val statusText = when (connectionState) {
+                    is ChatViewModel.ConnectionState.Connected -> stringResource(id = R.string.banner_listening)
+                    is ChatViewModel.ConnectionState.Connecting -> stringResource(id = R.string.connecting_status)
+                    is ChatViewModel.ConnectionState.Disconnected -> stringResource(id = R.string.banner_paused)
+                    is ChatViewModel.ConnectionState.Error -> connectionState.message.ifEmpty { errorFallback }
+                }
+                Text(
+                    text = statusText,
+                    color = when {
+                        isConnected -> AlertGreen
+                        isConnecting -> TwitchPurpleLight
+                        isError -> AlertRed
+                        else -> TextMuted
+                    },
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            if (isConnected || isConnecting) {
+                OutlinedButton(
+                    onClick = onPause,
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = AlertRed
+                    ),
+                    border = ButtonDefaults.outlinedButtonBorder.copy(
+                        brush = androidx.compose.ui.graphics.SolidColor(AlertRed.copy(alpha = 0.5f))
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(34.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Pause,
+                        contentDescription = stringResource(id = R.string.pause_btn),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(id = R.string.pause_btn),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                Button(
+                    onClick = onResume,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = TwitchPurple,
+                        contentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.height(34.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isError) Icons.Rounded.Refresh else Icons.Rounded.PlayArrow,
+                        contentDescription = stringResource(id = if (isError) R.string.retry_btn else R.string.resume_btn),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = stringResource(id = if (isError) R.string.retry_btn else R.string.resume_btn),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }
@@ -342,11 +552,11 @@ fun ChatMessageItem(message: TwitchIrcClient.TwitchChatMessage) {
                 modifier = Modifier.padding(bottom = 4.dp)
             ) {
                 if (message.isBroadcaster) {
-                    BadgeTag("Broadcaster", Color(0xFFE91E63))
+                    BadgeTag(stringResource(id = R.string.badge_broadcaster), Color(0xFFE91E63))
                 } else if (message.isMod) {
-                    BadgeTag("Mod", Color(0xFF00AD82))
+                    BadgeTag(stringResource(id = R.string.badge_moderator), Color(0xFF00AD82))
                 } else if (message.isSub) {
-                    BadgeTag("Sub", TwitchPurpleLight)
+                    BadgeTag(stringResource(id = R.string.badge_subscriber), TwitchPurpleLight)
                 }
 
                 Text(

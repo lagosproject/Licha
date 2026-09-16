@@ -43,26 +43,50 @@ class ChatSessionManager @Inject constructor(
 
     @Volatile private var currentChannel = ""
     @Volatile private var lastSpeaker = ""
+    @Volatile private var lastUsername = ""
+    @Volatile private var lastToken = ""
+    @Volatile private var lastTargetChannel = ""
+
+    val currentChannelName: String get() = currentChannel.ifEmpty { lastTargetChannel }
+    val canReconnect: Boolean
+        get() = lastUsername.isNotEmpty() && lastToken.isNotEmpty() && lastTargetChannel.isNotEmpty()
 
     fun connectToChat(username: String, token: String, targetChannel: String) {
+        val channelChanged = lastTargetChannel.isNotEmpty() && !lastTargetChannel.equals(targetChannel, ignoreCase = true)
+        lastUsername = username
+        lastToken = token
+        lastTargetChannel = targetChannel
         currentChannel = targetChannel
         _connectionState.value = ConnectionState.Connecting
         ircClient.disconnect()
-        _chatHistory.value = emptyList()
-        messageDeque.clear()
+        if (channelChanged) {
+            _chatHistory.value = emptyList()
+            messageDeque.clear()
+        }
         lastSpeaker = ""
         ircClient.connect(username, token, targetChannel, this)
     }
 
-    fun disconnect() {
+    fun reconnect() {
+        if (canReconnect) {
+            connectToChat(lastUsername, lastToken, lastTargetChannel)
+        }
+    }
+
+    fun disconnect(stopService: Boolean = true) {
         currentChannel = ""
         ircClient.disconnect()
         _connectionState.value = ConnectionState.Disconnected
-        _chatHistory.value = emptyList()
-        messageDeque.clear()
         lastSpeaker = ""
         ttsManager.stop()
-        ChatForegroundService.stop(context)
+        if (stopService) {
+            ChatForegroundService.stop(context)
+        }
+    }
+
+    fun clearHistory() {
+        _chatHistory.value = emptyList()
+        messageDeque.clear()
     }
 
     override fun onConnected() {

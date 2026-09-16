@@ -22,12 +22,10 @@
 -dontwarn okhttp3.**
 -dontwarn okio.**
 -keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
--keep class okhttp3.internal.http2.** { *; }
 
 # ------------------------------------------------------------------------------
-# 3. Kotlin — preserve metadata for sealed interfaces and data classes
+# 3. Kotlin Fields
 # ------------------------------------------------------------------------------
--keep class kotlin.Metadata { *; }
 -keepclassmembers class * {
     @kotlin.jvm.JvmField <fields>;
 }

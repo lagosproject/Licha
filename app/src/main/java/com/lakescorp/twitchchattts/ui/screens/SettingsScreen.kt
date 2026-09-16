@@ -14,12 +14,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Chat
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.PauseCircle
+import androidx.compose.material.icons.rounded.PlayCircle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -57,6 +59,10 @@ fun SettingsScreen(
     val ignoreMods by viewModel.ignoreMods.collectAsState()
     val ignoredUsers by viewModel.ignoredUsers.collectAsState()
     val keepScreenOn by viewModel.keepScreenOn.collectAsState()
+    val stopOnAppClose by viewModel.stopOnAppClose.collectAsState()
+    val connectionState by viewModel.connectionState.collectAsState()
+    val isConnected = connectionState is ChatViewModel.ConnectionState.Connected ||
+            connectionState is ChatViewModel.ConnectionState.Connecting
 
     val pitch by viewModel.pitch.collectAsState()
     val rate by viewModel.rate.collectAsState()
@@ -80,8 +86,8 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(id = R.string.cd_back),
                             tint = TextLight
                         )
                     }
@@ -135,8 +141,8 @@ fun SettingsScreen(
                             singleLine = true,
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.Chat,
-                                    contentDescription = "Channel Icon",
+                                    imageVector = Icons.AutoMirrored.Rounded.Chat,
+                                    contentDescription = stringResource(id = R.string.cd_channel_icon),
                                     tint = TwitchPurpleLight
                                 )
                             },
@@ -151,13 +157,15 @@ fun SettingsScreen(
                             )
                         )
                         Spacer(modifier = Modifier.width(8.dp))
+                        val isSameChannel = channelInput.trim().lowercase() == channel.lowercase()
+
                         Button(
                             onClick = {
-                                if (channelInput.isNotEmpty()) {
+                                if (channelInput.trim().isNotEmpty() && !isSameChannel) {
                                     viewModel.switchChannel(channelInput)
                                 }
                             },
-                            enabled = channelInput.trim().isNotEmpty() && channelInput.trim().lowercase() != channel.lowercase(),
+                            enabled = channelInput.trim().isNotEmpty() && !isSameChannel,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = TwitchPurple,
                                 contentColor = Color.White
@@ -165,9 +173,25 @@ fun SettingsScreen(
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.height(52.dp)
                         ) {
-                            Text(stringResource(id = R.string.switch_btn), fontWeight = FontWeight.Bold)
+                            Text(
+                                text = stringResource(id = R.string.switch_btn),
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
+
+                    val statusText = when (connectionState) {
+                        is ChatViewModel.ConnectionState.Connected -> stringResource(id = R.string.connected_status)
+                        is ChatViewModel.ConnectionState.Connecting -> stringResource(id = R.string.connecting_status)
+                        is ChatViewModel.ConnectionState.Disconnected -> stringResource(id = R.string.offline_status)
+                        is ChatViewModel.ConnectionState.Error -> stringResource(id = R.string.error_status)
+                    }
+                    Text(
+                        text = stringResource(id = R.string.current_channel_status, channel, statusText),
+                        fontSize = 12.sp,
+                        color = TextMuted,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                 }
             }
 
@@ -294,9 +318,12 @@ fun SettingsScreen(
                                     Text(
                                         text = currentVoiceInfo?.displayName ?: stringResource(id = R.string.default_voice),
                                         color = TextLight,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f)
+                                        maxLines = 2,
+                                        lineHeight = 18.sp,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .padding(end = 8.dp)
                                     )
                                     Text(
                                         text = "▼",
@@ -442,7 +469,10 @@ fun SettingsScreen(
                             ),
                             modifier = Modifier.size(52.dp)
                         ) {
-                            Icon(imageVector = Icons.Default.Add, contentDescription = "Add User")
+                            Icon(
+                                imageVector = Icons.Rounded.Add,
+                                contentDescription = stringResource(id = R.string.cd_add_user)
+                            )
                         }
                     }
 
@@ -473,8 +503,8 @@ fun SettingsScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Remove User",
+                                        imageVector = Icons.Rounded.Close,
+                                        contentDescription = stringResource(id = R.string.cd_remove_user),
                                         tint = AlertRed,
                                         modifier = Modifier
                                             .size(16.dp)
@@ -510,6 +540,36 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
+                    // Stop on App Close
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(id = R.string.stop_on_app_close),
+                                fontWeight = FontWeight.Medium,
+                                color = TextLight
+                            )
+                            Text(
+                                text = stringResource(id = R.string.stop_on_app_close_desc),
+                                fontSize = 12.sp,
+                                color = TextMuted
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Switch(
+                            checked = stopOnAppClose,
+                            onCheckedChange = { viewModel.setStopOnAppClose(it) },
+                            colors = SwitchDefaults.colors(checkedThumbColor = TwitchPurple)
+                        )
+                    }
+
+                    HorizontalDivider(color = BorderColor, modifier = Modifier.padding(vertical = 4.dp))
+
                     // Keep Screen On
                     Row(
                         modifier = Modifier
@@ -586,8 +646,8 @@ fun SettingsScreen(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                            contentDescription = "Configure Battery Optimization",
+                            imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                            contentDescription = stringResource(id = R.string.cd_battery_optimization),
                             tint = TextMuted,
                             modifier = Modifier.size(20.dp)
                         )
@@ -644,7 +704,7 @@ fun SettingsScreen(
                                 } catch (e: ActivityNotFoundException) {
                                     Toast.makeText(context, R.string.no_browser_found, Toast.LENGTH_LONG).show()
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, e.localizedMessage ?: "Error opening link", Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context, e.localizedMessage ?: context.getString(R.string.error_opening_browser), Toast.LENGTH_LONG).show()
                                 }
                             }
                             .padding(vertical = 6.dp),
@@ -665,8 +725,8 @@ fun SettingsScreen(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                            contentDescription = "Open GitHub",
+                            imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                            contentDescription = stringResource(id = R.string.cd_open_github),
                             tint = TwitchPurpleLight,
                             modifier = Modifier.size(20.dp)
                         )
@@ -674,24 +734,96 @@ fun SettingsScreen(
                 }
             }
 
-            // LOG OUT BUTTON
-            Button(
-                onClick = {
-                    viewModel.logout()
-                    onBack()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AlertRed,
-                    contentColor = Color.White
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                shape = RoundedCornerShape(8.dp)
+            // SECTION 6: SESSION MANAGEMENT
+            Text(
+                text = stringResource(id = R.string.session_management_title),
+                style = MaterialTheme.typography.titleMedium,
+                color = TwitchPurpleLight,
+                fontWeight = FontWeight.Bold
+            )
+
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(imageVector = Icons.Default.Delete, contentDescription = "Log Out")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(id = R.string.log_out), fontWeight = FontWeight.Bold)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Pause / Disconnect or Resume Reading
+                    Column {
+                        OutlinedButton(
+                            onClick = {
+                                if (isConnected) {
+                                    viewModel.disconnect()
+                                } else {
+                                    viewModel.reconnect()
+                                }
+                            },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = if (isConnected) AlertOrange else AlertGreen
+                            ),
+                            border = ButtonDefaults.outlinedButtonBorder.copy(
+                                brush = androidx.compose.ui.graphics.SolidColor(
+                                    if (isConnected) AlertOrange else AlertGreen
+                                )
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (isConnected) Icons.Rounded.PauseCircle else Icons.Rounded.PlayCircle,
+                                contentDescription = stringResource(id = R.string.cd_disconnect)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (isConnected) stringResource(id = R.string.pause_reading_btn) else stringResource(id = R.string.start_listening),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            text = stringResource(id = R.string.pause_reading_desc),
+                            fontSize = 12.sp,
+                            color = TextMuted,
+                            modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+                        )
+                    }
+
+                    HorizontalDivider(color = BorderColor)
+
+                    // Log Out
+                    Column {
+                        Button(
+                            onClick = {
+                                viewModel.logout()
+                                onBack()
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = AlertRed,
+                                contentColor = Color.White
+                            ),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.Logout,
+                                contentDescription = stringResource(id = R.string.cd_logout)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(id = R.string.log_out),
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Text(
+                            text = stringResource(id = R.string.logout_desc),
+                            fontSize = 12.sp,
+                            color = TextMuted,
+                            modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+                        )
+                    }
+                }
             }
         }
     }

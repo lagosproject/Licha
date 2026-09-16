@@ -21,7 +21,7 @@ import os
 import sys
 
 LANGS = ["en-US", "es-ES", "fr-FR"]
-PACKAGE = "com.lakescorp.twitchchattts"
+PACKAGE = "com.LakesCorp.TwitchChatTTS"
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 RAW_DIR = os.path.join(SCRIPT_DIR, "raw")
 
@@ -77,7 +77,7 @@ def capture_flow(form_factor):
 
         # 3. Launch Licha
         print("  Starting Licha...")
-        run_cmd(f"adb shell am start -n {PACKAGE}/.MainActivity")
+        run_cmd(f"adb shell am start -n {PACKAGE}/com.lakescorp.twitchchattts.MainActivity")
         time.sleep(2.0)
 
         # Capture Login

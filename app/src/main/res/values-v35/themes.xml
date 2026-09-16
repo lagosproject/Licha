@@ -1,9 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Base application theme. -->
+    <!-- Android 15 (SDK 35+) edge-to-edge and cutout layout enforcement -->
     <style name="Theme.TwitchChatTTS" parent="android:Theme.Material.NoActionBar">
-        <!-- Transparent status and navigation bars for edge-to-edge support -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- Android 15 display cutout mode -->
+        <item name="android:windowLayoutInDisplayCutoutMode">always</item>
     </style>
 </resources>

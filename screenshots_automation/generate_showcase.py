@@ -1,712 +1,453 @@
 #!/usr/bin/env python3
 """
-generate_showcase.py — Play Store Screenshot & Feature Graphic Generator for Licha (TwitchChatTTS)
-=============================================================================================
-Creates beautiful 1080×1920 showcase cards (for Phone, 7-inch Tablet, and 10-inch Tablet)
-in English, Spanish, and French, plus a 1024×500 Feature Graphic banner.
+generate_showcase.py — Play Store Showcase Graphic & Feature Banner Generator
+for Licha (TwitchChatTTS)
+=============================================================================
+Creates high-contrast, polished showcase cards for:
+- Phone: 1080×1920 px
+- 7-inch Tablet: 1080×1920 px
+- 10-inch Tablet: 1200×1920 px
+- Feature Graphic: 1024×500 px
+Across 3 languages: es-ES, en-US, fr-FR.
 
-If raw screenshots are not found under `raw/`, this script automatically generates
-highly polished, branded mock screenshots for Login, Chat, and Settings screens.
-
-Run:
-  python3 generate_showcase.py
+Uses 100% authentic captures from raw/phone/:
+  1. chat.png   - Real-time chat reader with Twitch badges and hero status banner
+  2. tuning.png - Quick Audio Tuning drawer (speed, pitch, volume sliders)
+  3. settings.png - Voice configuration, filters, and background playback settings
 """
 
 import os
 import sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-# ─── Constants ───
-OUT_W = 1080
-OUT_H = 1920
+# Target Dimensions
+PHONE_W, PHONE_H = 1080, 1920
+TAB7_W, TAB7_H = 1080, 1920
+TAB10_W, TAB10_H = 1200, 1920
+FEATURE_W, FEATURE_H = 1024, 500
 
-# Mock status and navigation bar heights for raw screen cropping/masking
 STATUS_BAR = 96
 NAV_BAR = 120
 
-LANGS = ["en-US", "es-ES", "fr-FR"]
+LANGS = ["es-ES", "en-US", "fr-FR"]
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-RAW_DIR = os.path.join(SCRIPT_DIR, "raw")
+RAW_DIR = os.path.join(SCRIPT_DIR, "raw", "phone")
 OUT_DIR = os.path.join(SCRIPT_DIR, "output")
+ICON_PATH = os.path.join(SCRIPT_DIR, "..", "app", "src", "main", "res", "mipmap-xxxhdpi", "ic_launcher_foreground.png")
 
-# Brand colors (Twitch-inspired palette)
-ACCENT = (145, 70, 255)       # Twitch Purple (#9146FF)
-ACCENT_LIGHT = (169, 112, 255) # Light Twitch Purple (#A970FF)
-BG_DARK = (14, 14, 16)         # Dark background (#0E0E10)
-BG_SURFACE = (24, 24, 27)      # Dark surface (#18181B)
-BG_CARD = (31, 31, 35)         # Dark card/bubble (#1F1F23)
-WHITE = (239, 239, 241)        # Text light (#EFEFF1)
-MUTED = (173, 173, 184)        # Text muted (#ADADB8)
-GREEN = (0, 245, 212)          # Alert/Success Green (#00F5D4)
-RED = (255, 85, 85)            # Alert/Error Red (#FF5555)
+# Brand Palette (Twitch Deep Dark / Royal Purple / Accent Cyan)
+BG_TOP = (14, 14, 18)         # #0E0E12
+BG_BOTTOM = (26, 16, 48)      # #1A1030
+PRIMARY = (145, 70, 255)      # Twitch Purple #9146FF
+ACCENT_LIGHT = (185, 130, 255) # Light Purple #B982FF
+ACCENT_CYAN = (0, 245, 212)   # Success / Audio accent #00F5D4
+WHITE = (255, 255, 255)
+MUTED = (175, 175, 195)
+FRAME_BORDER = (145, 70, 255, 160)
+FRAME_BG = (20, 20, 24, 255)
 
-# ─── Localized Copy Config ───
-LANG_COPY = {
-    "en-US": {
-        "brand": "L I C H A",
-        "login": {
-            "title": "SECURE LOGIN",
-            "headline": "SECURE AUTHENTICATION",
-            "subtext": "Connect with Twitch OAuth using secure client credentials."
-        },
-        "chat": {
-            "title": "TWITCH TTS",
-            "headline": "REAL-TIME SPEECH",
-            "subtext": "Listen to your chat messages aloud while you focus on streaming."
-        },
-        "settings": {
-            "title": "SETTINGS",
-            "headline": "TAILORED SPEECH SETTINGS",
-            "subtext": "Adjust speech voice, rate, pitch, and chat filters to your liking."
-        },
-        "feature_graphic": {
-            "headline": "L I C H A",
-            "subtext": "Twitch Chat Text-to-Speech Reader"
+# Localized Copy Configuration
+COPY_DATA = {
+    "es-ES": {
+        "brand": "LICHA",
+        "screens": [
+            {
+                "file": "chat.png",
+                "out_name": "showcase_chat.png",
+                "tag": "TWITCH TTS",
+                "headline": "CHAT A VOZ EN TIEMPO REAL",
+                "subtext": "Escucha los mensajes del chat mientras transmites o juegas sin perder detalle."
+            },
+            {
+                "file": "tuning.png",
+                "out_name": "showcase_tuning.png",
+                "tag": "CONTROL RÁPIDO",
+                "headline": "AJUSTES RÁPIDOS DE VOZ",
+                "subtext": "Ajusta velocidad, tono y volumen al instante sobre la marcha sin salir del chat."
+            },
+            {
+                "file": "settings.png",
+                "out_name": "showcase_settings.png",
+                "tag": "PERSONALIZACIÓN",
+                "headline": "VOZ Y FILTROS A TU MEDIDA",
+                "subtext": "Elige motores de voz, silencia por rol o lista de ignorados y reproduce en segundo plano."
+            }
+        ],
+        "feature": {
+            "title": "Licha - Twitch Chat TTS",
+            "tagline": "Tu chat de Twitch, leído en voz alta",
+            "chips": ["Chat en Tiempo Real", "Ajustes de Voz", "Modo 2º Plano", "Filtros por Rol"]
         }
     },
-    "es-ES": {
-        "brand": "L I C H A",
-        "login": {
-            "title": "ACCESO SEGURO",
-            "headline": "CONEXIÓN SEGURA",
-            "subtext": "Conéctate con Twitch OAuth utilizando credenciales seguras."
-        },
-        "chat": {
-            "title": "TWITCH TTS",
-            "headline": "CHAT A VOZ EN TIEMPO REAL",
-            "subtext": "Escucha los mensajes del chat en tiempo real mientras transmites."
-        },
-        "settings": {
-            "title": "AJUSTES",
-            "headline": "VOZ Y FILTROS A TU MEDIDA",
-            "subtext": "Ajusta voces del sintetizador, velocidad, tono y filtros a tu gusto."
-        },
-        "feature_graphic": {
-            "headline": "L I C H A",
-            "subtext": "Lector de Chat de Twitch por Voz (TTS)"
+    "en-US": {
+        "brand": "LICHA",
+        "screens": [
+            {
+                "file": "chat.png",
+                "out_name": "showcase_chat.png",
+                "tag": "TWITCH TTS",
+                "headline": "REAL-TIME SPEECH FOR TWITCH",
+                "subtext": "Listen to incoming chat messages read aloud while staying focused on your gameplay."
+            },
+            {
+                "file": "tuning.png",
+                "out_name": "showcase_tuning.png",
+                "tag": "AUDIO TUNING",
+                "headline": "INSTANT VOICE CONTROLS",
+                "subtext": "Fine-tune speech rate, pitch, and volume on the fly without leaving the chat."
+            },
+            {
+                "file": "settings.png",
+                "out_name": "showcase_settings.png",
+                "tag": "CUSTOMIZATION",
+                "headline": "TAILORED SPEECH & FILTERS",
+                "subtext": "Pick voice engines, filter noisy roles or ignored users, and keep reading in background."
+            }
+        ],
+        "feature": {
+            "title": "Licha - Twitch Chat TTS",
+            "tagline": "Your Twitch chat, read aloud",
+            "chips": ["Real-Time Chat", "Instant Voice Tuning", "Background Playback", "Role Filters"]
         }
     },
     "fr-FR": {
-        "brand": "L I C H A",
-        "login": {
-            "title": "CONNEXION",
-            "headline": "CONNEXION SÉCURISÉE",
-            "subtext": "Connectez-vous via Twitch OAuth avec des identifiants sécurisés."
-        },
-        "chat": {
-            "title": "TWITCH TTS",
-            "headline": "LECTURE DU CHAT EN DIRECT",
-            "subtext": "Écoutez les messages de votre chat à haute voix tout en diffusant."
-        },
-        "settings": {
-            "title": "OPTIONS",
-            "headline": "PARAMÈTRES SUR MESURE",
-            "subtext": "Ajustez la vitesse, le volume, le pitch et les filtres de chat."
-        },
-        "feature_graphic": {
-            "headline": "L I C H A",
-            "subtext": "Synthèse Vocale pour le Chat Twitch"
+        "brand": "LICHA",
+        "screens": [
+            {
+                "file": "chat.png",
+                "out_name": "showcase_chat.png",
+                "tag": "TWITCH TTS",
+                "headline": "LECTURE DU CHAT EN DIRECT",
+                "subtext": "Écoutez les messages de votre stream à haute voix tout en vous concentrant sur le jeu."
+            },
+            {
+                "file": "tuning.png",
+                "out_name": "showcase_tuning.png",
+                "tag": "CONTRÔLE VOCAL",
+                "headline": "RÉGLAGES AUDIO EN DIRECT",
+                "subtext": "Ajustez le débit, le pitch et le volume sonore instantanément sans fermer le chat."
+            },
+            {
+                "file": "settings.png",
+                "out_name": "showcase_settings.png",
+                "tag": "PERSONNALISATION",
+                "headline": "VOIX ET FILTRES SUR MESURE",
+                "subtext": "Sélectionnez vos voix, appliquez des filtres de rôle et continuez en arrière-plan."
+            }
+        ],
+        "feature": {
+            "title": "Licha - Twitch Chat TTS",
+            "tagline": "Votre chat Twitch, à voix haute",
+            "chips": ["Chat en Direct", "Réglages Audio", "Lecture en Arrière-Plan", "Filtres par Rôle"]
         }
     }
 }
 
-# ─── Font Helpers ───
-def _try_fonts(paths, size):
-    for p in paths:
+def get_font(size, bold=True):
+    font_candidates = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf" if bold else "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
+    ]
+    for p in font_candidates:
         if os.path.exists(p):
             try:
                 return ImageFont.truetype(p, size)
             except Exception:
-                continue
+                pass
     return ImageFont.load_default()
 
-def font_sans(size, bold=False):
-    return _try_fonts([
-        f"/usr/share/fonts/truetype/dejavu/DejaVuSans{'-Bold' if bold else ''}.ttf",
-        f"/usr/share/fonts/truetype/liberation/LiberationSans-{'Bold' if bold else 'Regular'}.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf" if bold else "/usr/share/fonts/truetype/freefont/FreeSans.ttf"
-    ], size)
+def draw_vertical_gradient(width, height, top_color, bottom_color):
+    base = Image.new("RGB", (width, height), top_color)
+    draw = ImageDraw.Draw(base)
+    for y in range(height):
+        ratio = y / float(height)
+        r = int(top_color[0] * (1 - ratio) + bottom_color[0] * ratio)
+        g = int(top_color[1] * (1 - ratio) + bottom_color[1] * ratio)
+        b = int(top_color[2] * (1 - ratio) + bottom_color[2] * ratio)
+        draw.line([(0, y), (width, y)], fill=(r, g, b))
+    return base
 
-# ─── Drawing Helpers ───
-def center_text(draw, text, y, font, fill, width=OUT_W):
-    bbox = draw.textbbox((0, 0), text, font=font)
-    tw = bbox[2] - bbox[0]
-    x = (width - tw) // 2
-    draw.text((x, y), text, font=font, fill=fill)
-
-def wrap_text_centered(draw, text, y, font, fill, max_w, line_gap=10, width=OUT_W):
+def wrap_text(text, font, max_width):
     words = text.split()
-    lines, cur = [], ""
-    for w in words:
-        test = f"{cur} {w}".strip()
-        if draw.textbbox((0, 0), test, font=font)[2] <= max_w:
-            cur = test
+    lines = []
+    current_line = []
+    for word in words:
+        test_line = " ".join(current_line + [word])
+        bbox = font.getbbox(test_line)
+        w = bbox[2] - bbox[0]
+        if w <= max_width or not current_line:
+            current_line.append(word)
         else:
-            if cur:
-                lines.append(cur)
-            cur = w
-    if cur:
-        lines.append(cur)
+            lines.append(" ".join(current_line))
+            current_line = [word]
+    if current_line:
+        lines.append(" ".join(current_line))
+    return lines
 
-    lh = draw.textbbox((0, 0), "Ag", font=font)[3] - draw.textbbox((0,0), "Ag", font=font)[1] + line_gap
-    for i, ln in enumerate(lines):
-        center_text(draw, ln, y + i * lh, font, fill, width)
-    return len(lines) * lh
+def create_device_frame(inner_img, target_w, target_h, corner_radius=32):
+    # Crop status and nav bars if raw screenshot
+    crop_t = min(STATUS_BAR, int(inner_img.height * 0.05))
+    crop_b = min(NAV_BAR, int(inner_img.height * 0.06))
+    cropped = inner_img.crop((0, crop_t, inner_img.width, inner_img.height - crop_b))
 
-def get_wrap_height(draw, text, font, max_w, line_gap=10):
-    words = text.split()
-    lines, cur = [], ""
-    for w in words:
-        test = f"{cur} {w}".strip()
-        if draw.textbbox((0, 0), test, font=font)[2] <= max_w:
-            cur = test
-        else:
-            if cur:
-                lines.append(cur)
-            cur = w
-    if cur:
-        lines.append(cur)
-    lh = draw.textbbox((0, 0), "Ag", font=font)[3] - draw.textbbox((0,0), "Ag", font=font)[1] + line_gap
-    return len(lines) * lh
+    border_px = 8
+    avail_w = target_w - border_px * 2
+    avail_h = target_h - border_px * 2
 
-def accent_rule(draw, y, length=140, color=None, width=OUT_W):
-    color = color or (*ACCENT, 200)
-    cx = width // 2
-    draw.line([(cx - length // 2, y), (cx + length // 2, y)], fill=color, width=3)
+    scale_w = avail_w / float(cropped.width)
+    scale_h = avail_h / float(cropped.height)
+    scale = min(scale_w, scale_h)
 
-def dark_gradient(w, h, tint_ratio=0.35):
-    img = Image.new("RGB", (w, h), BG_DARK)
-    d = ImageDraw.Draw(img)
-    for i in range(h):
-        t = i / h
-        r = int(BG_DARK[0] + (ACCENT[0] - BG_DARK[0]) * t * tint_ratio)
-        g = int(BG_DARK[1] + (ACCENT[1] - BG_DARK[1]) * t * tint_ratio * 0.4)
-        b = int(BG_DARK[2] + (ACCENT[2] - BG_DARK[2]) * t * tint_ratio * 0.8)
-        d.line([(0, i), (w, i)], fill=(r, g, b))
-    return img
+    scaled_w = int(cropped.width * scale)
+    scaled_h = int(cropped.height * scale)
+    resized_screen = cropped.resize((scaled_w, scaled_h), Image.Resampling.LANCZOS)
 
-def rounded_rect_mask(size, radius):
-    mask = Image.new("L", size, 0)
-    ImageDraw.Draw(mask).rounded_rectangle([(0, 0), (size[0] - 1, size[1] - 1)], radius=radius, fill=255)
-    return mask
+    # Frame dimensions
+    frame_w = scaled_w + border_px * 2
+    frame_h = scaled_h + border_px * 2
 
-def apply_shadow(img, blur=18, offset=(6, 10), color=(0, 0, 0, 160)):
-    pad = blur * 2
-    sw, sh = img.width + pad + abs(offset[0]), img.height + pad + abs(offset[1])
-    shadow = Image.new("RGBA", (sw, sh), (0, 0, 0, 0))
-    stamp = Image.new("RGBA", img.size, color)
-    mask = img.split()[3]
-    ox, oy = pad // 2 + max(0, offset[0]), pad // 2 + max(0, offset[1])
-    shadow.paste(stamp, (ox, oy), mask)
-    shadow = shadow.filter(ImageFilter.GaussianBlur(blur))
-    ix, iy = pad // 2 + max(0, -offset[0]), pad // 2 + max(0, -offset[1])
-    shadow.paste(img, (ix, iy), img)
-    return shadow, (ix - ox, iy - oy)
+    # Mask for rounded screen corners
+    mask = Image.new("L", (scaled_w, scaled_h), 0)
+    draw_mask = ImageDraw.Draw(mask)
+    draw_mask.rounded_rectangle([0, 0, scaled_w, scaled_h], radius=corner_radius, fill=255)
 
-def draw_licha_logo(draw, cx, cy, height, foreground_color=WHITE, accent_color=ACCENT):
-    """
-    Draws the Licha logo: a speech bubble containing a speaker icon.
-    """
-    scale = height / 120.0
-    bw, bh = int(110 * scale), int(80 * scale)
-    bx1, by1 = cx - bw // 2, cy - bh // 2 - int(10 * scale)
-    bx2, by2 = cx + bw // 2, cy + bh // 2 - int(10 * scale)
-    
-    # Draw speech bubble body
-    draw.rounded_rectangle([bx1, by1, bx2, by2], radius=int(18 * scale), fill=accent_color)
-    
-    # Tail (triangle at bottom-left)
-    tx1 = bx1 + int(20 * scale)
-    ty1 = by2
-    tx2 = bx1 + int(40 * scale)
-    ty2 = by2
-    tx3 = bx1 + int(12 * scale)
-    ty3 = by2 + int(20 * scale)
-    draw.polygon([(tx1, ty1), (tx2, ty1), (tx3, ty3)], fill=accent_color)
-    
-    # Speaker icon inside the bubble
-    sx = cx - int(25 * scale)
-    sy = cy - int(20 * scale)
-    sw, sh = int(15 * scale), int(20 * scale)
-    draw.rectangle([sx, sy + int(2 * scale), sx + sw, sy + sh - int(2 * scale)], fill=foreground_color)
-    
-    cx1 = sx + sw
-    cy1 = sy + int(5 * scale)
-    cx2 = cx1 + int(15 * scale)
-    cy2 = sy
-    cx3 = cx2
-    cy3 = sy + sh
-    cx4 = cx1
-    cy4 = sy + sh - int(5 * scale)
-    draw.polygon([(cx1, cy1), (cx2, cy2), (cx3, cy3), (cx4, cy4)], fill=foreground_color)
-    
-    # Arcs
-    draw.arc([cx - int(2 * scale), cy - int(12 * scale), cx + int(14 * scale), cy + int(12 * scale)], start=300, end=60, fill=foreground_color, width=int(2.5 * scale))
-    draw.arc([cx - int(10 * scale), cy - int(20 * scale), cx + int(22 * scale), cy + int(20 * scale)], start=310, end=50, fill=foreground_color, width=int(2.5 * scale))
+    # Frame with elegant Twitch-purple border
+    frame = Image.new("RGBA", (frame_w, frame_h), (0, 0, 0, 0))
+    draw_frame = ImageDraw.Draw(frame)
+    draw_frame.rounded_rectangle(
+        [0, 0, frame_w - 1, frame_h - 1],
+        radius=corner_radius + 6,
+        fill=FRAME_BG,
+        outline=FRAME_BORDER,
+        width=3
+    )
+    frame.paste(resized_screen, (border_px, border_px), mask)
 
+    # Soft ambient drop shadow
+    shadow_pad = 32
+    shadow_img = Image.new("RGBA", (frame_w + shadow_pad * 2, frame_h + shadow_pad * 2), (0, 0, 0, 0))
+    draw_shadow = ImageDraw.Draw(shadow_img)
+    draw_shadow.rounded_rectangle(
+        [shadow_pad, shadow_pad + 8, shadow_pad + frame_w, shadow_pad + frame_h + 8],
+        radius=corner_radius + 8,
+        fill=(0, 0, 0, 160)
+    )
+    shadow_img = shadow_img.filter(ImageFilter.GaussianBlur(14))
+    shadow_img.paste(frame, (shadow_pad, shadow_pad), frame)
 
-# ─── Mock Screenshot Generator ───
-def generate_mock_screenshot(screen_type, lang, width, height, channel_name="twitch_streamer"):
-    """
-    Generates a highly aesthetic mock Android screenshot for Licha.
-    Used automatically when raw/ screenshots are missing.
-    """
-    img = Image.new("RGB", (width, height), BG_DARK)
-    draw = ImageDraw.Draw(img)
-    
-    # Constants scaled relative to width
-    pad = int(width * 0.05)
-    f_title = font_sans(int(width * 0.065), bold=True)
-    f_body = font_sans(int(width * 0.04))
-    f_sub = font_sans(int(width * 0.035), bold=True)
-    f_meta = font_sans(int(width * 0.03))
-    
-    # ── 1. Status Bar
-    draw.text((pad, int(height * 0.015)), "12:00", font=f_meta, fill=WHITE)
-    # Draw simple battery & wifi symbols
-    bx = width - pad - int(width * 0.08)
-    by = int(height * 0.018)
-    draw.rectangle([bx, by, bx + int(width * 0.05), by + int(height * 0.012)], outline=WHITE, width=1)
-    draw.rectangle([bx, by, bx + int(width * 0.035), by + int(height * 0.012)], fill=WHITE)
-    draw.rectangle([bx + int(width * 0.05), by + int(height * 0.003), bx + int(width * 0.055), by + int(height * 0.009)], fill=WHITE)
-    
-    # ── 2. App Header
-    # Draw speaker logo beside app name
-    logo_h = int(height * 0.04)
-    draw_licha_logo(draw, pad + int(width * 0.05), int(height * 0.075), logo_h, WHITE, ACCENT)
-    
-    brand_text = "Licha"
-    draw.text((pad + int(width * 0.14), int(height * 0.055)), brand_text, font=f_title, fill=WHITE)
-    draw.line([(pad, int(height * 0.115)), (width - pad, int(height * 0.115))], fill=BG_CARD, width=2)
-    
-    content_y = int(height * 0.14)
-    
-    # ── 3. Screen Contents
-    if screen_type == "login":
-        # Form Container Card
-        card_y1 = content_y
-        card_y2 = height - int(height * 0.12)
-        draw.rounded_rectangle([pad, card_y1, width - pad, card_y2], radius=int(width * 0.04), fill=BG_SURFACE, outline=BG_CARD, width=1)
-        
-        y = card_y1 + int(height * 0.04)
-        
-        # Heading inside card
-        lbl_login = LANG_COPY[lang]["login"]["title"]
-        draw.text((pad + int(width * 0.05), y), lbl_login, font=f_body, fill=WHITE)
-        y += int(height * 0.06)
-        
-        # Client ID Input field
-        draw.text((pad + int(width * 0.05), y), "Twitch Client ID:", font=f_meta, fill=MUTED)
-        y += int(height * 0.03)
-        input_w = width - pad * 4
-        input_h = int(height * 0.06)
-        draw.rounded_rectangle([pad * 2, y, pad * 2 + input_w, y + input_h], radius=int(width * 0.02), fill=BG_DARK, outline=ACCENT, width=1)
-        draw.text((pad * 2 + int(width * 0.04), y + int(input_h * 0.25)), "gp5v6m207xndyqj1b43u9z...", font=f_meta, fill=WHITE)
-        y += input_h + int(height * 0.04)
-        
-        # OAuth Token Input field
-        draw.text((pad + int(width * 0.05), y), "Twitch OAuth Token:", font=f_meta, fill=MUTED)
-        y += int(height * 0.03)
-        draw.rounded_rectangle([pad * 2, y, pad * 2 + input_w, y + input_h], radius=int(width * 0.02), fill=BG_DARK, outline=BG_CARD, width=1)
-        draw.text((pad * 2 + int(width * 0.04), y + int(input_h * 0.25)), "oauth:••••••••••••••••••••••••", font=f_meta, fill=MUTED)
-        y += input_h + int(height * 0.06)
-        
-        # Button: CONNECT TO TWITCH
-        btn_w = input_w
-        btn_h = int(height * 0.07)
-        btn_y1 = y
-        draw.rounded_rectangle([pad * 2, btn_y1, pad * 2 + btn_w, btn_y1 + btn_h], radius=int(width * 0.03), fill=ACCENT)
-        
-        lbl_conn = "CONNECT TO TWITCH" if lang == "en-US" else "CONECTAR A TWITCH" if lang == "es-ES" else "CONNEXION TWITCH"
-        # Center button text
-        bbox = draw.textbbox((0, 0), lbl_conn, font=f_sub)
-        bw = bbox[2] - bbox[0]
-        bx = pad * 2 + (btn_w - bw) // 2
-        draw.text((bx, btn_y1 + int(btn_h * 0.28)), lbl_conn, font=f_sub, fill=WHITE)
-        
-    elif screen_type == "chat":
-        # Connected Status Banner
-        banner_h = int(height * 0.06)
-        draw.rounded_rectangle([pad, content_y, width - pad, content_y + banner_h], radius=int(width * 0.02), fill=BG_SURFACE, outline=BG_CARD, width=1)
-        draw.ellipse([pad + int(width * 0.04), content_y + int(banner_h * 0.35), pad + int(width * 0.04) + int(width * 0.03), content_y + int(banner_h * 0.35) + int(width * 0.03)], fill=GREEN)
-        
-        lbl_status = f"Connected to #{channel_name}" if lang == "en-US" else f"Conectado a #{channel_name}" if lang == "es-ES" else f"Connecté à #{channel_name}"
-        draw.text((pad + int(width * 0.10), content_y + int(banner_h * 0.25)), lbl_status, font=f_meta, fill=WHITE)
-        
-        # Messages List
-        y = content_y + banner_h + int(height * 0.03)
-        
-        messages = {
-            "en-US": [
-                ("System", "Speech synthesis initialized successfully.", GREEN),
-                ("Nightbot", "Remember to subscribe to the channel for benefits!", ACCENT_LIGHT),
-                ("Gamer_X", "Hello streamer! Love the gameplay today.", WHITE),
-                ("Speedy_07", "Can you hear my text to speech message?", WHITE),
-                ("TechGeek", "This Licha reader makes VR streams so much easier!", WHITE)
-            ],
-            "es-ES": [
-                ("System", "Síntesis de voz inicializada correctamente.", GREEN),
-                ("Nightbot", "¡Recuerda suscribirte al canal para obtener beneficios!", ACCENT_LIGHT),
-                ("Gamer_X", "¡Hola! Me encanta el stream de hoy.", WHITE),
-                ("Speedy_07", "¿Puedes oír mi mensaje de voz a texto?", WHITE),
-                ("TechGeek", "¡Licha hace que los streams de VR sean mucho más fáciles!", WHITE)
-            ],
-            "fr-FR": [
-                ("System", "Synthèse vocale initialisée avec succès.", GREEN),
-                ("Nightbot", "Pensez à vous abonner pour soutenir la chaîne !", ACCENT_LIGHT),
-                ("Gamer_X", "Salut ! Super stream aujourd'hui.", WHITE),
-                ("Speedy_07", "Est-ce que tu entends mon message vocal ?", WHITE),
-                ("TechGeek", "Licha rend les streams VR tellement plus simples !", WHITE)
-            ]
-        }[lang]
-        
-        for name, text, text_color in messages:
-            box_h = int(height * 0.11)
-            draw.rounded_rectangle([pad, y, width - pad, y + box_h], radius=int(width * 0.03), fill=BG_SURFACE)
-            
-            # Speaker icon for voice indicator on TTS message
-            draw.arc([pad + int(width * 0.03), y + int(box_h * 0.35), pad + int(width * 0.07), y + int(box_h * 0.35) + int(width * 0.04)], start=300, end=60, fill=ACCENT_LIGHT, width=2)
-            draw.polygon([(pad + int(width * 0.02), y + int(box_h * 0.42)), (pad + int(width * 0.04), y + int(box_h * 0.35)), (pad + int(width * 0.04), y + int(box_h * 0.65)), (pad + int(width * 0.02), y + int(box_h * 0.58))], fill=ACCENT_LIGHT)
-            
-            # Name
-            draw.text((pad + int(width * 0.10), y + int(box_h * 0.15)), name, font=f_sub, fill=ACCENT_LIGHT if name != "System" else GREEN)
-            # Message Text
-            draw.text((pad + int(width * 0.10), y + int(box_h * 0.55)), text, font=f_meta, fill=text_color)
-            
-            y += box_h + int(height * 0.02)
-            
-    elif screen_type == "settings":
-        y = content_y
-        
-        settings_items = {
-            "en-US": [
-                ("TTS Engine Status", "Active (Google TTS Engine)", "status"),
-                ("Voice Locale", "English (United States)", "selector"),
-                ("Speech Speed (1.2x)", "Rate slider", "slider", 0.6),
-                ("Speech Pitch (1.0x)", "Pitch slider", "slider", 0.5),
-                ("Read Chat Usernames", "Reads the sender's username", "toggle", True),
-                ("Ignore System Bot Commands", "Filters out chat command messages", "toggle", False)
-            ],
-            "es-ES": [
-                ("Estado del Motor TTS", "Activo (Motor de Voz de Google)", "status"),
-                ("Idioma de la Voz", "Español (España)", "selector"),
-                ("Velocidad de Voz (1.2x)", "Velocidad", "slider", 0.6),
-                ("Tono de Voz (1.0x)", "Tono", "slider", 0.5),
-                ("Leer Nombres de Usuario", "Lee el nombre de quien envía", "toggle", True),
-                ("Ignorar Comandos de Bots", "Filtra mensajes con comandos de chat", "toggle", False)
-            ],
-            "fr-FR": [
-                ("État de la Synthèse", "Actif (Moteur de Synthèse Google)", "status"),
-                ("Langue de la Voix", "Français (France)", "selector"),
-                ("Vitesse de parole (1.2x)", "Vitesse", "slider", 0.6),
-                ("Pitch de parole (1.0x)", "Pitch", "slider", 0.5),
-                ("Lire les noms d'utilisateurs", "Lit le nom de l'expéditeur", "toggle", True),
-                ("Ignorer commandes de robots", "Filtre les commandes de chat", "toggle", False)
-            ]
-        }[lang]
-        
-        for title, desc, control_type, *args in settings_items:
-            item_h = int(height * 0.09)
-            draw.rounded_rectangle([pad, y, width - pad, y + item_h], radius=int(width * 0.02), fill=BG_SURFACE)
-            
-            # Title & Desc
-            draw.text((pad + int(width * 0.04), y + int(item_h * 0.2)), title, font=f_sub, fill=WHITE)
-            draw.text((pad + int(width * 0.04), y + int(item_h * 0.58)), desc, font=f_meta, fill=MUTED)
-            
-            # Draw visual control interfaces
-            cx = width - pad - int(width * 0.12)
-            cy = y + int(item_h * 0.35)
-            
-            if control_type == "toggle":
-                val = args[0]
-                # Toggle box
-                t_w, t_h = int(width * 0.10), int(item_h * 0.35)
-                rx = width - pad - t_w - int(width * 0.03)
-                ry = y + (item_h - t_h)//2
-                draw.rounded_rectangle([rx, ry, rx + t_w, ry + t_h], radius=t_h//2, fill=ACCENT if val else BG_DARK, outline=ACCENT, width=1)
-                circle_d = t_h - int(width * 0.01)
-                cx_c = rx + (t_w - circle_d - int(width * 0.005)) if val else rx + int(width * 0.005)
-                cy_c = ry + int(width * 0.005)
-                draw.ellipse([cx_c, cy_c, cx_c + circle_d, cy_c + circle_d], fill=WHITE)
-                
-            elif control_type == "slider":
-                val = args[0]
-                s_w = int(width * 0.22)
-                rx = width - pad - s_w - int(width * 0.03)
-                ry = y + int(item_h * 0.48)
-                # Slider track
-                draw.line([(rx, ry), (rx + s_w, ry)], fill=BG_DARK, width=6)
-                # Active track
-                draw.line([(rx, ry), (rx + int(s_w * val), ry)], fill=ACCENT, width=6)
-                # Slider knob
-                kx = rx + int(s_w * val)
-                draw.ellipse([kx - 8, ry - 8, kx + 8, ry + 8], fill=WHITE)
-                
-            elif control_type == "selector" or control_type == "status":
-                # Arrow indicator
-                rx = width - pad - int(width * 0.06)
-                ry = y + int(item_h * 0.35)
-                draw.polygon([(rx, ry), (rx + int(width*0.02), ry + int(width*0.015)), (rx, ry + int(width*0.03))], fill=MUTED)
-                
-            y += item_h + int(height * 0.015)
-            
-    # ── 4. Navigation Bar
-    ny = height - int(height * 0.04)
-    # Draw simple triangle back button
-    draw.polygon([(pad * 2, ny), (pad * 2 + int(width * 0.03), ny - int(height * 0.012)), (pad * 2 + int(width * 0.03), ny + int(height * 0.012))], fill=MUTED)
-    # Circle home button
-    cx_n = width // 2
-    draw.ellipse([cx_n - 12, ny - 12, cx_n + 12, ny + 12], fill=MUTED)
-    # Square recents button
-    rx_n = width - pad * 2 - 20
-    draw.rectangle([rx_n, ny - 10, rx_n + 20, ny + 10], fill=MUTED)
-    
-    return img
+    return shadow_img, shadow_pad
 
-def get_raw_screenshot(screen_type, lang, width, height, form_factor, channel_name="twitch_streamer", regenerate=False):
-    """
-    Looks for the screenshot in the source directory.
-    If not found, generates a beautiful mock screenshot.
-    """
-    os.makedirs(os.path.join(RAW_DIR, form_factor, lang), exist_ok=True)
-    filename = f"{screen_type}.png"
-    filepath = os.path.join(RAW_DIR, form_factor, lang, filename)
-    
-    if regenerate and os.path.exists(filepath):
+def render_showcase_card(screen_info, lang, width, height, is_tablet=False):
+    card = draw_vertical_gradient(width, height, BG_TOP, BG_BOTTOM)
+    draw = ImageDraw.Draw(card)
+
+    font_tag = get_font(24 if not is_tablet else 22, bold=True)
+    font_hl = get_font(46 if not is_tablet else 42, bold=True)
+    font_sub = get_font(26 if not is_tablet else 23, bold=False)
+
+    raw_path = os.path.join(RAW_DIR, lang, screen_info["file"])
+    if not os.path.exists(raw_path):
+        print(f"  ⚠ Missing raw capture: {raw_path}")
+        return None
+
+    screen_img = Image.open(raw_path).convert("RGBA")
+
+    # Typography section
+    pad_x = 70 if not is_tablet else (90 if width > 1100 else 75)
+    start_y = 80 if not is_tablet else 70
+    max_w = width - 2 * pad_x
+
+    # Pill Tag
+    tag_text = screen_info["tag"].upper()
+    bbox = font_tag.getbbox(tag_text)
+    tag_w = bbox[2] - bbox[0] + 32
+    tag_h = bbox[3] - bbox[1] + 18
+    draw.rounded_rectangle([pad_x, start_y, pad_x + tag_w, start_y + tag_h], radius=12, fill=PRIMARY)
+    draw.text((pad_x + 16, start_y + 8), tag_text, font=font_tag, fill=WHITE)
+
+    # Headline
+    hl_y = start_y + tag_h + 20
+    hl_lines = wrap_text(screen_info["headline"], font_hl, max_w)
+    curr_y = hl_y
+    for line in hl_lines:
+        draw.text((pad_x, curr_y), line, font=font_hl, fill=WHITE)
+        bbox_l = font_hl.getbbox(line)
+        curr_y += (bbox_l[3] - bbox_l[1]) + 10
+
+    # Subtext
+    curr_y += 6
+    sub_lines = wrap_text(screen_info["subtext"], font_sub, max_w)
+    for line in sub_lines:
+        draw.text((pad_x, curr_y), line, font=font_sub, fill=MUTED)
+        bbox_s = font_sub.getbbox(line)
+        curr_y += (bbox_s[3] - bbox_s[1]) + 8
+
+    # Framed device placed cleanly below typography
+    device_top_y = curr_y + 35
+    bottom_margin = 50
+    available_h = height - device_top_y - bottom_margin
+    available_w = int(width * 0.86)
+
+    framed, shadow_pad = create_device_frame(screen_img, available_w, available_h)
+    pos_x = (width - framed.width) // 2
+    pos_y = device_top_y - shadow_pad
+    card.paste(framed, (pos_x, pos_y), framed)
+
+    return card
+
+def render_feature_graphic(lang_code, lang_info):
+    banner = draw_vertical_gradient(FEATURE_W, FEATURE_H, (12, 12, 16), (28, 18, 54))
+    draw = ImageDraw.Draw(banner)
+
+    # Subtle ambient glow
+    glow = Image.new("RGBA", (FEATURE_W, FEATURE_H), (0, 0, 0, 0))
+    g_draw = ImageDraw.Draw(glow)
+    g_draw.ellipse([60, -80, 600, 480], fill=(145, 70, 255, 65))
+    g_draw.ellipse([600, 120, 1050, 580], fill=(0, 245, 212, 40))
+    glow = glow.filter(ImageFilter.GaussianBlur(60))
+    banner.paste(glow, (0, 0), glow)
+
+    # App Icon with card framing
+    if os.path.exists(ICON_PATH):
         try:
-            os.remove(filepath)
+            icon_img = Image.open(ICON_PATH).convert("RGBA").resize((200, 200), Image.Resampling.LANCZOS)
+            icon_card = Image.new("RGBA", (230, 230), (0, 0, 0, 0))
+            ic_draw = ImageDraw.Draw(icon_card)
+            ic_draw.rounded_rectangle([0, 0, 229, 229], radius=44, fill=(30, 24, 48, 240), outline=PRIMARY, width=2)
+            icon_card.paste(icon_img, (15, 15), icon_img)
+            banner.paste(icon_card, (70, 135), icon_card)
         except Exception:
             pass
-            
-    if os.path.exists(filepath):
-        try:
-            return Image.open(filepath)
-        except Exception as e:
-            print(f"  ⚠ Failed to load {filepath}: {e}. Generating mockup instead.")
-            
-    # Generate mock screenshot dynamically
-    mock_img = generate_mock_screenshot(screen_type, lang, width, height, channel_name)
-    mock_img.save(filepath, "PNG")
-    print(f"  🎨 Autogenerated mock screenshot: {filepath} ({width}x{height})")
-    return mock_img
 
+    # Typography
+    text_x = 340
+    f_title = get_font(52, bold=True)
+    f_tagline = get_font(26, bold=False)
+    f_chips = get_font(18, bold=True)
 
-# ─── Showcase Card Generator (Universal) ───
-def make_showcase_card(screen_type, lang, form_factor, out_path, channel_name="twitch_streamer", regenerate=False):
-    """
-    Builds a unified 1080×1920 Google Play Store Showcase Card.
-    - Phone layout: Mockup frame at the top (y=100 to y=1300), copy centered at the bottom.
-    - Tablet layout: Copy at the top, tablet mockup frame at the bottom (y=460 to y=1920).
-    """
-    W, H = OUT_W, OUT_H
-    
-    # 1. Determine screenshot source size
-    if form_factor == "phone":
-        raw_w, raw_h = 1080, 2400
-        phone_h_render = 1200
-        crop_top, crop_bottom = STATUS_BAR, NAV_BAR
-    elif form_factor == "tablet_7":
-        raw_w, raw_h = 1200, 1920
-        phone_h_render = 1200
-        crop_top, crop_bottom = STATUS_BAR, NAV_BAR
-    else: # tablet_10
-        raw_w, raw_h = 1600, 2560
-        phone_h_render = 1150
-        crop_top, crop_bottom = STATUS_BAR, NAV_BAR
-        
-    # Get the raw screenshot
-    raw_img = get_raw_screenshot(screen_type, lang, raw_w, raw_h, form_factor, channel_name, regenerate).convert("RGBA")
-    
-    # Crop status & nav bars
-    cropped = raw_img.crop((0, crop_top, raw_img.width, raw_img.height - crop_bottom))
-    
-    # Scale to target render height
-    scale = phone_h_render / cropped.height
-    pw = int(cropped.width * scale)
-    ph = phone_h_render
-    scaled = cropped.resize((pw, ph), Image.LANCZOS)
-    
-    # Create mask for rounded corners
-    corner_radius = 42 if form_factor == "phone" else 24
-    mask = rounded_rect_mask((pw, ph), radius=corner_radius)
-    scaled.putalpha(mask)
-    
-    # Draw premium accent border around screenshot
-    border_draw = ImageDraw.Draw(scaled)
-    border_draw.rounded_rectangle([(0, 0), (pw - 1, ph - 1)], radius=corner_radius, outline=(*ACCENT, 180), width=4)
-    
-    # Apply soft drop shadow
-    shadowed, (six, siy) = apply_shadow(scaled, blur=22, offset=(0, 14))
-    
-    # Paste onto canvas
-    canvas = dark_gradient(W, H).convert("RGBA")
-    draw = ImageDraw.Draw(canvas)
-    
-    # Text styles
-    f_label = font_sans(24, bold=True)
-    f_head = font_sans(56, bold=True)
-    f_sub = font_sans(32, bold=False)
-    
-    brand_lbl = LANG_COPY[lang]["brand"]
-    headline = LANG_COPY[lang][screen_type]["headline"]
-    subtext = LANG_COPY[lang][screen_type]["subtext"]
-    
-    if form_factor == "phone":
-        # ── Phone: Screenshot Top, Text Bottom
-        # Paste Mockup centered horizontally
-        sx = (W - shadowed.width) // 2
-        sy = 100 - siy
-        canvas.paste(shadowed, (sx, sy), shadowed)
-        
-        # Soft vertical fade-out transition
-        fade_h = 100
-        fade_y = 1250
-        fade = Image.new("RGBA", (W, fade_h))
-        fd = ImageDraw.Draw(fade)
-        for i in range(fade_h):
-            a = int(255 * ((i/fade_h) ** 1.6))
-            fd.line([(0, i), (W, i)], fill=(*BG_DARK, a))
-        canvas.alpha_composite(fade, (0, fade_y))
-        
-        # Calculate dynamic text height to center it perfectly
-        label_h = 24
-        gap1, gap2 = 45, 30
-        headline_h = get_wrap_height(draw, headline, f_head, W - 100, 16)
-        gap3 = 24
-        subtext_h = get_wrap_height(draw, subtext, f_sub, W - 120, 12)
-        
-        total_text_h = label_h + gap1 + gap2 + headline_h + gap3 + subtext_h
-        panel_y = 1300
-        panel_h = H - panel_y
-        
-        text_y = panel_y + (panel_h - total_text_h) // 2
-        
-        # Draw text elements
-        center_text(draw, brand_lbl, text_y, f_label, (*ACCENT_LIGHT, 210))
-        text_y += label_h + gap1
-        accent_rule(draw, text_y, length=100, color=(*ACCENT_LIGHT, 140))
-        text_y += gap2
-        
-        y_used = wrap_text_centered(draw, headline, text_y, f_head, WHITE, max_w=W - 100, line_gap=16)
-        text_y += y_used + gap3
-        accent_rule(draw, text_y, length=60, color=(*ACCENT_LIGHT, 160))
-        text_y += gap3
-        
-        wrap_text_centered(draw, subtext, text_y, f_sub, MUTED, max_w=W - 120, line_gap=12)
-        
-    else:
-        # ── Tablet (7" and 10"): Text Top, Screenshot Bottom
-        # Draw text elements at the top
-        text_y = 54
-        center_text(draw, brand_lbl, text_y, f_label, (*ACCENT_LIGHT, 210))
-        accent_rule(draw, 102, length=100, color=(*ACCENT_LIGHT, 140))
-        
-        y_used = wrap_text_centered(draw, headline, 134, f_head, WHITE, max_w=W - 100, line_gap=16)
-        accent_rule(draw, 134 + y_used + 16, length=60, color=(*ACCENT_LIGHT, 160))
-        
-        wrap_text_centered(draw, subtext, 134 + y_used + 46, f_sub, MUTED, max_w=W - 120, line_gap=12)
-        
-        # Paste tablet mockup centered at the bottom
-        sx = (W - shadowed.width) // 2
-        sy = 480 - siy
-        canvas.paste(shadowed, (sx, sy), shadowed)
-        
-    # Save the card
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    canvas.convert("RGB").save(out_path, "PNG", optimize=True)
-    size_kb = os.path.getsize(out_path) // 1024
-    print(f"  ✅ Generated card: {out_path} ({size_kb} KB)")
+    draw.text((text_x, 140), lang_info["feature"]["title"], font=f_title, fill=WHITE)
+    draw.text((text_x, 215), lang_info["feature"]["tagline"], font=f_tagline, fill=ACCENT_LIGHT)
 
+    # Feature Chips (2x2 grid with vibrant accent dots)
+    row1_y = 270
+    row2_y = 325
+    chips = lang_info["feature"]["chips"]
+    dot_colors = [
+        (0, 245, 212),   # Cyan / Live
+        (169, 112, 255), # Purple / Tuning
+        (255, 215, 0),   # Gold / Background
+        (255, 107, 107)  # Coral / Filters
+    ]
 
-# ─── Feature Graphic Generator ───
-def make_feature_graphic(out_path, lang="en-US"):
-    """
-    Generates a 1024×500 Store Banner (Feature Graphic) following Play Store best practices:
-      - Deep rich dark background gradient
-      - Split layout: Large speaker bubble logo on the left, copy on the right
-      - Styled typography using brand colors
-    """
-    W, H = 1024, 500
-    
-    # Background gradient
-    canvas = Image.new("RGB", (W, H), BG_DARK)
-    draw = ImageDraw.Draw(canvas)
-    for i in range(H):
-        ratio = i / H
-        r = int(BG_DARK[0] + (ACCENT[0] - BG_DARK[0]) * ratio * 0.25)
-        g = int(BG_DARK[1] + (ACCENT[1] - BG_DARK[1]) * ratio * 0.10)
-        b = int(BG_DARK[2] + (ACCENT[2] - BG_DARK[2]) * ratio * 0.20)
-        draw.line([(0, i), (W, i)], fill=(r, g, b))
-        
-    # Draw Licha Logo on the left
-    logo_h = 240
-    draw_licha_logo(draw, cx=280, cy=H//2, height=logo_h, foreground_color=WHITE, accent_color=ACCENT)
-    
-    # Draw brand copy on the right
-    f_title = font_sans(58, bold=True)
-    f_sub = font_sans(24, bold=False)
-    
-    headline = LANG_COPY[lang]["feature_graphic"]["headline"]
-    subtitle = LANG_COPY[lang]["feature_graphic"]["subtext"]
-    
-    y = H//2 - 60
-    draw.text((480, y), headline, font=f_title, fill=WHITE)
-    
-    y += 84
-    draw.line([(480, y), (600, y)], fill=(*ACCENT_LIGHT, 220), width=4)
-    
-    y += 24
-    draw.text((480, y), subtitle, font=f_sub, fill=MUTED)
-    
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    canvas.save(out_path, "PNG", optimize=True)
-    size_kb = os.path.getsize(out_path) // 1024
-    print(f"  🎨 Generated Feature Graphic: {out_path} ({size_kb} KB)")
+    # Row 1
+    curr_x = text_x
+    for i in range(min(2, len(chips))):
+        chip = chips[i]
+        color = dot_colors[i]
+        bbox = f_chips.getbbox(chip)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        cw = tw + 50
+        ch = th + 18
+        draw.rounded_rectangle([curr_x, row1_y, curr_x + cw, row1_y + ch], radius=12, fill=(36, 26, 62, 230), outline=(145, 70, 255, 150), width=1)
+        dot_y = row1_y + ch // 2
+        draw.ellipse([curr_x + 15, dot_y - 5, curr_x + 25, dot_y + 5], fill=color)
+        draw.text((curr_x + 32, row1_y + 8), chip, font=f_chips, fill=WHITE)
+        curr_x += cw + 14
 
+    # Row 2
+    curr_x = text_x
+    for i in range(2, min(4, len(chips))):
+        chip = chips[i]
+        color = dot_colors[i]
+        bbox = f_chips.getbbox(chip)
+        tw = bbox[2] - bbox[0]
+        th = bbox[3] - bbox[1]
+        cw = tw + 50
+        ch = th + 18
+        draw.rounded_rectangle([curr_x, row2_y, curr_x + cw, row2_y + ch], radius=12, fill=(36, 26, 62, 230), outline=(145, 70, 255, 150), width=1)
+        dot_y = row2_y + ch // 2
+        draw.ellipse([curr_x + 15, dot_y - 5, curr_x + 25, dot_y + 5], fill=color)
+        draw.text((curr_x + 32, row2_y + 8), chip, font=f_chips, fill=WHITE)
+        curr_x += cw + 14
 
-# ─── Main ───
+    return banner
+
+def clean_old_fake_showcases():
+    """Removes obsolete fake mock files from output/."""
+    for root, dirs, files in os.walk(OUT_DIR):
+        for f in files:
+            if "login" in f.lower():
+                try:
+                    p = os.path.join(root, f)
+                    os.remove(p)
+                    print(f"  🗑 Removed obsolete fake showcase: {p}")
+                except Exception:
+                    pass
+
 def main():
-    import argparse
-    parser = argparse.ArgumentParser(description="Play Store Showcase generator for Licha")
-    parser.add_argument("--channel", default="twitch_streamer", help="Twitch channel name to display (default: 'twitch_streamer')")
-    parser.add_argument("--regenerate-mockups", action="store_true", help="Force deletion and regeneration of mock screenshots in raw/")
-    args = parser.parse_args()
-    
-    channel_name = args.channel
-    regenerate = args.regenerate_mockups
-    
     print("=" * 70)
-    print("      LICHA (TwitchChatTTS) — Play Store Asset Creation Suite")
-    print(f"      Target Channel: #{channel_name}")
+    print("      LICHA (TwitchChatTTS) — Play Store Showcase Generator")
+    print("      Using 100% Authentic Device Captures from raw/phone/")
     print("=" * 70)
-    
-    # 1. Process showcases for each locale & form factor
-    for form_factor in ["phone", "tablet_7", "tablet_10"]:
-        print(f"\n🚀 Processing Form Factor: {form_factor.upper()}")
-        print("-" * 50)
-        
-        for lang in LANGS:
-            print(f"  Locale: {lang}")
-            for screen in ["login", "chat", "settings"]:
-                out_file = f"showcase_{screen}.png"
-                out_path = os.path.join(OUT_DIR, form_factor, lang, out_file)
-                make_showcase_card(screen, lang, form_factor, out_path, channel_name, regenerate)
-                
-    # 2. Process Feature Graphic (English as default banner)
-    print(f"\n🚀 Generating Feature Graphic Banner")
-    print("-" * 50)
-    make_feature_graphic(os.path.join(OUT_DIR, "feature_graphic.png"), lang="en-US")
-    
-    print(f"\n{'='*70}")
-    print("  COMPLETED SUCCESSFULLY!")
-    print(f"{'='*70}")
-    print(f"  All Play Store assets have been written to:")
-    print(f"  {OUT_DIR}/")
-    print(f"  └─ phone/      ← Upload to Phone Screenshots section")
-    print(f"  └─ tablet_7/   ← Upload to 7-inch Tablet Screenshots section")
-    print(f"  └─ tablet_10/  ← Upload to 10-inch Tablet Screenshots section")
-    print(f"  └─ feature_graphic.png  ← Upload to Feature Graphic section")
-    print("-" * 70)
+
+    clean_old_fake_showcases()
+
+    for lang in LANGS:
+        print(f"\n🚀 Generating showcase assets for '{lang}'...")
+        lang_data = COPY_DATA[lang]
+
+        phone_dir = os.path.join(OUT_DIR, "phone", lang)
+        tab7_dir = os.path.join(OUT_DIR, "tablet_7", lang)
+        tab10_dir = os.path.join(OUT_DIR, "tablet_10", lang)
+
+        os.makedirs(phone_dir, exist_ok=True)
+        os.makedirs(tab7_dir, exist_ok=True)
+        os.makedirs(tab10_dir, exist_ok=True)
+
+        for screen in lang_data["screens"]:
+            # 1. Phone card (1080×1920)
+            phone_card = render_showcase_card(screen, lang, PHONE_W, PHONE_H, is_tablet=False)
+            if phone_card:
+                out_p = os.path.join(phone_dir, screen["out_name"])
+                phone_card.save(out_p, "PNG", optimize=True)
+                print(f"  ✓ Phone card: {screen['out_name']}")
+
+            # 2. Tablet 7" card (1080×1920)
+            tab7_card = render_showcase_card(screen, lang, TAB7_W, TAB7_H, is_tablet=True)
+            if tab7_card:
+                out_t7 = os.path.join(tab7_dir, screen["out_name"])
+                tab7_card.save(out_t7, "PNG", optimize=True)
+                print(f"  ✓ Tablet 7\" card: {screen['out_name']}")
+
+            # 3. Tablet 10" card (1200×1920)
+            tab10_card = render_showcase_card(screen, lang, TAB10_W, TAB10_H, is_tablet=True)
+            if tab10_card:
+                out_t10 = os.path.join(tab10_dir, screen["out_name"])
+                tab10_card.save(out_t10, "PNG", optimize=True)
+                print(f"  ✓ Tablet 10\" card: {screen['out_name']}")
+
+        # 4. Feature Graphics (1024×500)
+        fg_card = render_feature_graphic(lang, lang_data)
+        fg_path = os.path.join(OUT_DIR, f"feature_graphic_{lang}.png")
+        fg_card.save(fg_path, "PNG", optimize=True)
+        print(f"  ✓ Feature Graphic: {os.path.basename(fg_path)}")
+
+    # Default banner (English)
+    en_fg = render_feature_graphic("en-US", COPY_DATA["en-US"])
+    en_fg.save(os.path.join(OUT_DIR, "feature_graphic.png"), "PNG", optimize=True)
+    print("  ✓ Feature Graphic default: feature_graphic.png")
+
+    print("\n" + "=" * 70)
+    print("  COMPLETED SUCCESSFULLY! All Play Store showcases generated:")
+    print(f"  Directory: {OUT_DIR}/")
+    print("  └─ phone/      (chat, tuning, settings)")
+    print("  └─ tablet_7/   (chat, tuning, settings)")
+    print("  └─ tablet_10/  (chat, tuning, settings)")
+    print("  └─ feature_graphic*.png")
+    print("=" * 70)
 
 if __name__ == "__main__":
     main()

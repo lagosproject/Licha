@@ -56,12 +56,19 @@
 
     <!-- Background Playback & Settings -->
     <string name="background_service_title">Background Playback</string>
+    <string name="stop_on_app_close">Stop on App Close</string>
+    <string name="stop_on_app_close_desc">Stop listening and background service when the app is swiped away from recent apps</string>
     <string name="keep_screen_on">Keep Screen On</string>
     <string name="keep_screen_on_desc">Prevent the screen from sleeping while viewing chat</string>
     <string name="battery_optimization">Battery Optimization</string>
     <string name="battery_optimization_desc">Ensure background chat playback is not killed by battery saving</string>
     <string name="battery_unrestricted">Unrestricted (Recommended)</string>
     <string name="battery_optimized">Optimized (Tap to configure)</string>
+    <string name="connect_btn">Connect</string>
+    <string name="disconnect_btn">Disconnect</string>
+    <string name="disconnect_desc">Stop listening without logging out</string>
+    <string name="start_listening">Start Listening</string>
+    <string name="stop_listening">Stop Listening</string>
 
     <!-- About & Project -->
     <string name="about_section">About &amp; Community</string>
@@ -74,5 +81,48 @@
     <string name="service_notification_channel_desc">Maintains real-time Twitch chat TTS connection in the background</string>
     <string name="service_notification_title">Licha - Twitch Chat TTS</string>
     <string name="service_notification_connected">Listening to chat in #%1$s</string>
+    <string name="service_notification_paused">Chat paused (#%1$s)</string>
+    <string name="service_action_play">Resume</string>
+    <string name="service_action_pause">Pause</string>
     <string name="service_action_stop">Stop</string>
+    <string name="service_action_close">Close</string>
+
+    <!-- Modernized UI, Hero Banner & Audio Controls -->
+    <string name="speed_format">%1$.1fx</string>
+    <string name="pitch_format">%1$.1fx</string>
+    <string name="volume_format">%1$d%%</string>
+    <string name="reset_audio">Reset</string>
+    <string name="banner_listening">Listening to chat</string>
+    <string name="banner_paused">Speech paused</string>
+    <string name="resume_btn">Resume</string>
+    <string name="pause_btn">Pause</string>
+    <string name="retry_btn">Retry</string>
+    <string name="current_channel_status">Current channel: #%1$s (%2$s)</string>
+    <string name="session_management_title">Session Management</string>
+    <string name="pause_reading_btn">Pause / Disconnect Reading</string>
+    <string name="pause_reading_desc">Temporarily stops speech without logging out of Twitch</string>
+    <string name="logout_desc">Deletes stored credentials and disconnects completely</string>
+    <string name="badge_broadcaster">Broadcaster</string>
+    <string name="badge_moderator">Mod</string>
+    <string name="badge_subscriber">Sub</string>
+
+    <!-- TalkBack & Accessibility Content Descriptions -->
+    <string name="cd_quick_audio_tuning">Quick audio tuning</string>
+    <string name="cd_unmute_speech">Unmute speech</string>
+    <string name="cd_mute_speech">Mute speech</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_channel_icon">Channel icon</string>
+    <string name="cd_add_user">Add user</string>
+    <string name="cd_remove_user">Remove user</string>
+    <string name="cd_battery_optimization">Configure battery optimization</string>
+    <string name="cd_open_github">Open GitHub repository</string>
+    <string name="cd_disconnect">Disconnect</string>
+    <string name="cd_logout">Log out</string>
+    <string name="cd_play_preview">Play voice preview</string>
+    <string name="cd_error">Error</string>
+    <string name="cd_warning">Warning</string>
+    <string name="error_opening_browser">Error opening web browser</string>
 </resources>

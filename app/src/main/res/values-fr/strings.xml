@@ -56,12 +56,19 @@
 
     <!-- Background Playback & Settings -->
     <string name="background_service_title">Lecture en Arrière-Plan</string>
+    <string name="stop_on_app_close">Arrêter à la fermeture de l\'application</string>
+    <string name="stop_on_app_close_desc">Arrêter l\'écoute et le service en arrière-plan lorsque l\'application est balayée des récentes</string>
     <string name="keep_screen_on">Garder l\'Écran Allumé</string>
     <string name="keep_screen_on_desc">Empêcher la mise en veille de l\'écran lors de l\'affichage du chat</string>
     <string name="battery_optimization">Optimisation de la Batterie</string>
     <string name="battery_optimization_desc">Assurer que la lecture en arrière-plan ne soit pas interrompue par l\'économiseur de batterie</string>
     <string name="battery_unrestricted">Non restreinte (Recommandé)</string>
     <string name="battery_optimized">Optimisée (Appuyer pour configurer)</string>
+    <string name="connect_btn">Se Connecter</string>
+    <string name="disconnect_btn">Se Déconnecter</string>
+    <string name="disconnect_desc">Arrêter l\'écoute sans se déconnecter du compte</string>
+    <string name="start_listening">Commencer l\'Écoute</string>
+    <string name="stop_listening">Arrêter l\'Écoute</string>
 
     <!-- About & Project -->
     <string name="about_section">À Propos &amp; Communauté</string>
@@ -74,5 +81,48 @@
     <string name="service_notification_channel_desc">Maintient la connexion TTS du chat Twitch en arrière-plan</string>
     <string name="service_notification_title">Licha - Twitch Chat TTS</string>
     <string name="service_notification_connected">Écoute du chat sur #%1$s</string>
+    <string name="service_notification_paused">Chat en pause (#%1$s)</string>
+    <string name="service_action_play">Reprendre</string>
+    <string name="service_action_pause">Pause</string>
     <string name="service_action_stop">Arrêter</string>
+    <string name="service_action_close">Fermer</string>
+
+    <!-- Modernized UI, Hero Banner & Audio Controls -->
+    <string name="speed_format">%1$.1fx</string>
+    <string name="pitch_format">%1$.1fx</string>
+    <string name="volume_format">%1$d%%</string>
+    <string name="reset_audio">Réinitialiser</string>
+    <string name="banner_listening">Écoute du chat en cours</string>
+    <string name="banner_paused">Lecture en pause</string>
+    <string name="resume_btn">Reprendre</string>
+    <string name="pause_btn">Pause</string>
+    <string name="retry_btn">Réessayer</string>
+    <string name="current_channel_status">Chaîne actuelle : #%1$s (%2$s)</string>
+    <string name="session_management_title">Gestion de Session</string>
+    <string name="pause_reading_btn">Mettre en Pause / Déconnecter</string>
+    <string name="pause_reading_desc">Arrête temporairement la voix sans fermer la session Twitch</string>
+    <string name="logout_desc">Supprime les identifiants enregistrés et déconnecte totalement</string>
+    <string name="badge_broadcaster">Diffuseur</string>
+    <string name="badge_moderator">Mod</string>
+    <string name="badge_subscriber">Abo</string>
+
+    <!-- TalkBack & Accessibility Content Descriptions -->
+    <string name="cd_quick_audio_tuning">Réglages vocaux rapides</string>
+    <string name="cd_unmute_speech">Activer le son</string>
+    <string name="cd_mute_speech">Couper le son</string>
+    <string name="cd_settings">Paramètres</string>
+    <string name="cd_search">Rechercher</string>
+    <string name="cd_clear_search">Effacer la recherche</string>
+    <string name="cd_back">Retour</string>
+    <string name="cd_channel_icon">Icône de chaîne</string>
+    <string name="cd_add_user">Ajouter un utilisateur</string>
+    <string name="cd_remove_user">Supprimer l\'utilisateur</string>
+    <string name="cd_battery_optimization">Configurer l\'optimisation de la batterie</string>
+    <string name="cd_open_github">Ouvrir le dépôt GitHub</string>
+    <string name="cd_disconnect">Se déconnecter</string>
+    <string name="cd_logout">Déconnexion</string>
+    <string name="cd_play_preview">Écouter l\'aperçu vocal</string>
+    <string name="cd_error">Erreur</string>
+    <string name="cd_warning">Avertissement</string>
+    <string name="error_opening_browser">Erreur lors de l\'ouverture du navigateur</string>
 </resources>

@@ -113,6 +113,7 @@ class SettingsRepositoryImpl @Inject constructor(
         val IGNORE_SUBS = booleanPreferencesKey("ignoreSubscribers")
         val IGNORE_MODS = booleanPreferencesKey("ignoreModerators")
         val KEEP_SCREEN_ON = booleanPreferencesKey("keepScreenOn")
+        val STOP_ON_APP_CLOSE = booleanPreferencesKey("stopOnAppClose")
     }
 
     // ── Flows (safe reads — emit defaults on IO errors) ────────────────────────
@@ -137,6 +138,7 @@ class SettingsRepositoryImpl @Inject constructor(
     override val ignoreSubs: Flow<Boolean> = dataStore.safeFlow { it[Keys.IGNORE_SUBS] ?: false }
     override val ignoreMods: Flow<Boolean> = dataStore.safeFlow { it[Keys.IGNORE_MODS] ?: false }
     override val keepScreenOn: Flow<Boolean> = dataStore.safeFlow { it[Keys.KEEP_SCREEN_ON] ?: false }
+    override val stopOnAppClose: Flow<Boolean> = dataStore.safeFlow { it[Keys.STOP_ON_APP_CLOSE] ?: true }
 
     // ── Suspend writes ─────────────────────────────────────────────────────────
 
@@ -195,5 +197,9 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setKeepScreenOn(keep: Boolean) {
         dataStore.edit { it[Keys.KEEP_SCREEN_ON] = keep }
+    }
+
+    override suspend fun setStopOnAppClose(stop: Boolean) {
+        dataStore.edit { it[Keys.STOP_ON_APP_CLOSE] = stop }
     }
 }

@@ -17,8 +17,13 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import com.lakescorp.twitchchattts.MainActivity
 import com.lakescorp.twitchchattts.R
+import com.lakescorp.twitchchattts.data.repository.SettingsRepository
+import com.lakescorp.twitchchattts.di.ApplicationScope
 import com.lakescorp.twitchchattts.domain.ChatSessionManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
@@ -26,13 +31,24 @@ import javax.inject.Inject
  * when the app is backgrounded or when the device screen is off.
  *
  * Acquires a partial wake lock and wifi lock to prevent Doze mode / CPU suspension,
- * and displays an ongoing notification with a Stop action per Android guidelines.
+ * and displays an ongoing notification with Play/Pause and Stop actions.
  */
 @AndroidEntryPoint
 class ChatForegroundService : Service() {
 
     @Inject
     lateinit var chatSessionManager: ChatSessionManager
+
+    @Inject
+    lateinit var settingsRepository: SettingsRepository
+
+    @Inject
+    @ApplicationScope
+    lateinit var appScope: CoroutineScope
+
+    private var settingsJob: Job? = null
+    @Volatile private var stopOnAppClose: Boolean = true
+    @Volatile private var isPaused: Boolean = false
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
@@ -41,6 +57,8 @@ class ChatForegroundService : Service() {
     companion object {
         const val ACTION_START = "com.lakescorp.twitchchattts.action.START_FOREGROUND"
         const val ACTION_STOP = "com.lakescorp.twitchchattts.action.STOP_FOREGROUND"
+        const val ACTION_PAUSE = "com.lakescorp.twitchchattts.action.PAUSE_FOREGROUND"
+        const val ACTION_PLAY = "com.lakescorp.twitchchattts.action.PLAY_FOREGROUND"
         const val EXTRA_CHANNEL = "extra_channel"
 
         private const val NOTIFICATION_ID = 9001
@@ -74,27 +92,63 @@ class ChatForegroundService : Service() {
         }
     }
 
+    override fun onCreate() {
+        super.onCreate()
+        settingsJob = appScope.launch {
+            settingsRepository.stopOnAppClose.collect {
+                stopOnAppClose = it
+            }
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
                 val channel = intent.getStringExtra(EXTRA_CHANNEL) ?: currentChannel
-                currentChannel = channel
-                startForegroundWithNotification(channel)
+                currentChannel = channel.ifEmpty { chatSessionManager.currentChannelName }
+                isPaused = false
+                updateNotification(currentChannel, isPaused = false)
                 acquireLocks()
             }
-            ACTION_STOP -> {
+            ACTION_PAUSE -> {
+                isPaused = true
                 releaseLocks()
-                ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
-                stopSelf()
-                chatSessionManager.disconnect()
+                chatSessionManager.disconnect(stopService = false)
+                val channel = currentChannel.ifEmpty { chatSessionManager.currentChannelName }
+                updateNotification(channel, isPaused = true)
+            }
+            ACTION_PLAY -> {
+                isPaused = false
+                val channel = currentChannel.ifEmpty { chatSessionManager.currentChannelName }
+                updateNotification(channel, isPaused = false)
+                acquireLocks()
+                chatSessionManager.reconnect()
+            }
+            ACTION_STOP -> {
+                stopServiceInternal()
             }
         }
         return START_NOT_STICKY
     }
 
-    private fun startForegroundWithNotification(channel: String) {
+    private fun stopServiceInternal() {
+        releaseLocks()
+        ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+        stopSelf()
+        chatSessionManager.disconnect(stopService = false)
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        if (stopOnAppClose) {
+            Log.d("ChatForegroundService", "onTaskRemoved: stopping background service per user setting")
+            stopServiceInternal()
+        }
+    }
+
+    private fun updateNotification(channel: String, isPaused: Boolean) {
         createNotificationChannel()
 
         val openAppIntent = Intent(this, MainActivity::class.java).apply {
@@ -107,26 +161,54 @@ class ChatForegroundService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val toggleAction = if (isPaused) ACTION_PLAY else ACTION_PAUSE
+        val toggleIntent = Intent(this, ChatForegroundService::class.java).apply {
+            action = toggleAction
+        }
+        val togglePendingIntent = PendingIntent.getService(
+            this,
+            1,
+            toggleIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val stopIntent = Intent(this, ChatForegroundService::class.java).apply {
             action = ACTION_STOP
         }
         val stopPendingIntent = PendingIntent.getService(
             this,
-            1,
+            2,
             stopIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val channelDisplay = if (channel.isNotEmpty()) channel else "Twitch"
+        val (playPauseIcon, playPauseText) = if (isPaused) {
+            android.R.drawable.ic_media_play to getString(R.string.service_action_play)
+        } else {
+            android.R.drawable.ic_media_pause to getString(R.string.service_action_pause)
+        }
+
+        val contentText = if (isPaused) {
+            getString(R.string.service_notification_paused, channelDisplay)
+        } else {
+            getString(R.string.service_notification_connected, channelDisplay)
+        }
+
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.service_notification_title))
-            .setContentText(getString(R.string.service_notification_connected, channelDisplay))
+            .setContentText(contentText)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentIntent(openAppPendingIntent)
-            .setOngoing(true)
+            .setOngoing(!isPaused)
+            .addAction(
+                playPauseIcon,
+                playPauseText,
+                togglePendingIntent
+            )
             .addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                getString(R.string.service_action_stop),
+                getString(R.string.service_action_close),
                 stopPendingIntent
             )
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -205,6 +287,7 @@ class ChatForegroundService : Service() {
     }
 
     override fun onDestroy() {
+        settingsJob?.cancel()
         releaseLocks()
         super.onDestroy()
     }

@@ -41,6 +41,7 @@ interface SettingsRepository {
     val ignoreSubs: Flow<Boolean>
     val ignoreMods: Flow<Boolean>
     val keepScreenOn: Flow<Boolean>
+    val stopOnAppClose: Flow<Boolean>
 
     // ── DataStore suspend writes ───────────────────────────────────────────────
 
@@ -56,4 +57,5 @@ interface SettingsRepository {
     suspend fun setIgnoreSubs(ignore: Boolean)
     suspend fun setIgnoreMods(ignore: Boolean)
     suspend fun setKeepScreenOn(keep: Boolean)
+    suspend fun setStopOnAppClose(stop: Boolean)
 }
