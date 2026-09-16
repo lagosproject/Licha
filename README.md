@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/lagosproject/Licha/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/lagosproject/Licha/ci.yml?branch=main&style=flat-square" alt="Build Status">
+    <img src="https://img.shields.io/github/actions/workflow/status/lagosproject/Licha/ci.yml?branch=master&style=flat-square" alt="Build Status">
   </a>
   <a href="LICENSE">
     <img src="https://img.shields.io/github/license/lagosproject/Licha?style=flat-square" alt="License">
@@ -28,7 +28,7 @@
   </a>
 </p>
 
-Licha (TwitchChatTTS) is a beautiful, modern Android application that connects to your Twitch chat and reads messages aloud using Android's native Text-to-Speech (TTS) engine. It is designed to he[...]
+Licha (TwitchChatTTS) is a beautiful, modern Android application that connects to your Twitch chat and reads messages aloud using Android's native Text-to-Speech (TTS) engine. It is designed to help streamers, multitaskers, and visually impaired users stay connected with their community hands-free, without having to take their eyes off the screen.
 
 ---
 
@@ -50,22 +50,22 @@ Licha (TwitchChatTTS) is a beautiful, modern Android application that connects t
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="screenshots_automation/output/phone/en-US/showcase_login.png" alt="Login Screen" width="30%">
-  <img src="screenshots_automation/output/phone/en-US/showcase_chat.png" alt="Chat Screen" width="30%">
-  <img src="screenshots_automation/output/phone/en-US/showcase_settings.png" alt="Settings Screen" width="30%">
+  <img src="assets/screenshots/phone/showcase_chat.png" alt="Chat Screen" width="30%">
+  <img src="assets/screenshots/phone/showcase_tuning.png" alt="Audio Tuning" width="30%">
+  <img src="assets/screenshots/phone/showcase_settings.png" alt="Settings Screen" width="30%">
 </p>
 
 <p align="center">
-  <img src="screenshots_automation/output/tablet_10/en-US/showcase_login.png" alt="Tablet Login" width="30%">
-  <img src="screenshots_automation/output/tablet_10/en-US/showcase_chat.png" alt="Tablet Chat" width="30%">
-  <img src="screenshots_automation/output/tablet_10/en-US/showcase_settings.png" alt="Tablet Settings" width="30%">
+  <img src="assets/screenshots/tablet/showcase_chat.png" alt="Tablet Chat" width="30%">
+  <img src="assets/screenshots/tablet/showcase_tuning.png" alt="Tablet Audio Tuning" width="30%">
+  <img src="assets/screenshots/tablet/showcase_settings.png" alt="Tablet Settings" width="30%">
 </p>
 
 ---
 
 ## ℹ️ About the Project
 
-Licha provides a hands-free way to stay connected with your Twitch community. By logging in securely via OAuth, Licha connects to the Twitch IRC server over WebSockets and uses the Android Text-to[...]
+Licha provides a hands-free way to stay connected with your Twitch community. By logging in securely via OAuth, Licha connects to the Twitch IRC server over WebSockets and uses the Android Text-to-Speech (TTS) engine to narrate chat messages in real time with low latency and rich customization.
 
 ---
 
@@ -151,16 +151,16 @@ The build system injects it automatically into `BuildConfig.TWITCH_CLIENT_ID` at
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](file:///CONTRIBUTING.md) for guidelines on how to fork the repository, create feature branches, and submit Pull Requests.
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to fork the repository, create feature branches, and submit Pull Requests.
 
 ---
 
 ## 🛡️ Security
 
-To report a security vulnerability, please refer to our [SECURITY.md](file:///SECURITY.md) guidelines. Never report security issues via public GitHub issues.
+To report a security vulnerability, please refer to our [SECURITY.md](SECURITY.md) guidelines. Never report security issues via public GitHub issues.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License. See [LICENSE](file:///LICENSE) for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
